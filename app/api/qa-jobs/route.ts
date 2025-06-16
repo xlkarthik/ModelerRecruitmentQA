@@ -320,6 +320,12 @@ function patchPDFKit() {
   const originalStandardFont = (PDFDocument as any).StandardFont;
   if (originalStandardFont) {
     (PDFDocument as any).StandardFont = class PatchedStandardFont {
+      name: string;
+      ascender: number;
+      descender: number;
+      bbox: number[];
+      lineGap: number;
+
       constructor(name: string) {
         // Don't call super() to avoid file system access
         this.name = name;
@@ -333,14 +339,14 @@ function patchPDFKit() {
 
   // Override font loading methods
   const originalPDFDocument = PDFDocument;
-  const originalInitFonts = originalPDFDocument.prototype.initFonts;
+  const originalInitFonts = (originalPDFDocument.prototype as any).initFonts;
 
-  originalPDFDocument.prototype.initFonts = function () {
+  (originalPDFDocument.prototype as any).initFonts = function () {
     // Skip default font initialization
-    this._fontFamilies = {};
-    this._fontCount = 0;
-    this._fontSize = 12;
-    this._font = null;
+    (this as any)._fontFamilies = {};
+    (this as any)._fontCount = 0;
+    (this as any)._fontSize = 12;
+    (this as any)._font = null;
   };
 }
 
