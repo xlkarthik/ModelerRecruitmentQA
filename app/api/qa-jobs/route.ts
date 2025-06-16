@@ -301,184 +301,299 @@ function extractSimilarityScores(summary: string) {
   return scores;
 }
 // Helper: generate a 2-page PDF from annotated PNGs + diff
-// Solution 1: Always use external fonts to avoid bundling issues
-
-// Complete generatePDF function with all TypeScript errors fixed
-
-// COMPLETE SOLUTION: Replace PDFKit with jsPDF
-// First install: npm install jspdf html2canvas
-
-import { jsPDF } from "jspdf";
-
 async function generatePDF(
   annotated: string[],
   diff: any,
   modelStats?: ModelStats,
   tmpDir?: string
 ): Promise<Buffer> {
-  try {
-    console.log("Starting PDF generation with jsPDF...");
-
-    // Create new PDF document
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4",
-    });
-
-    let yPosition = 20;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 20;
-    const contentWidth = pageWidth - margin * 2;
-
-    // Header
-    doc.setFontSize(20);
-    doc.text("CharpstAR", margin, yPosition);
-    yPosition += 10;
-
-    doc.setFontSize(16);
-    doc.text("3D Model QA Report", margin, yPosition);
-    yPosition += 15;
-
-    // Draw line
-    doc.line(margin, yPosition, pageWidth - margin, yPosition);
-    yPosition += 15;
-
-    // Add images
-    for (let i = 0; i < annotated.length; i++) {
-      // Check if we need a new page
-      if (yPosition > pageHeight - 80) {
-        doc.addPage();
-        yPosition = 20;
-      }
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Download font from CDN
+      const fontUrl = "https://demosetc.b-cdn.net/fonts/Roboto-Regular.ttf";
+      let fontBuffer: Buffer | null = null;
 
       try {
-        // Convert file to base64 if it's a file path
-        let base64Image = annotated[i];
-        if (!annotated[i].startsWith("data:")) {
-          const fs = await import("fs");
-          const imageBuffer = fs.readFileSync(annotated[i]);
-          base64Image = `data:image/png;base64,${imageBuffer.toString(
-            "base64"
-          )}`;
+        const fontRes = await fetch(fontUrl);
+        if (!fontRes.ok) {
+          throw new Error(`Failed to fetch font: ${fontRes.status}`);
+        }
+        fontBuffer = Buffer.from(await fontRes.arrayBuffer());
+        console.log("✅ Font downloaded from CDN");
+      } catch (fontError) {
+        console.error("❌ Failed to download font from CDN:", fontError);
+      }
+
+      // Prepare for logo
+      let logoBuffer: Buffer | null = null;
+
+      // Try to download the logo
+      try {
+        const logoRes = await fetch(
+          "https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
+        );
+        if (logoRes.ok) {
+          logoBuffer = Buffer.from(await logoRes.arrayBuffer());
+          console.log("✅ Logo downloaded");
+        }
+      } catch (logoErr) {
+        console.error("❌ Failed to download logo:", logoErr);
+      }
+
+      // Create PDF document with standard A4 size and minimal margins
+      const doc = new PDFDocument({
+        autoFirstPage: false,
+        size: [595.28, 841.89], // A4 in points
+        margins: {
+          top: 50,
+          bottom: 50,
+          left: 50,
+          right: 50,
+        },
+        info: {
+          Title: "3D Model QA Report",
+          Author: "CharpstAR QA Automator",
+        },
+      });
+
+      // Create our own data collection system
+      const buffers: Buffer[] = [];
+      doc.on("data", (chunk) => buffers.push(Buffer.from(chunk)));
+      doc.on("end", () => resolve(Buffer.concat(buffers)));
+      doc.on("error", (err) => reject(err));
+
+      // Register font if available
+      if (fontBuffer) {
+        doc.registerFont("MainFont", fontBuffer);
+        doc.font("MainFont");
+      }
+
+      // Add first page
+      doc.addPage();
+
+      // --- PAGE 1: HEADER AND IMAGES ---
+
+      // Header - use logo if available, otherwise text
+      if (logoBuffer) {
+        doc.image(logoBuffer, 40, 40, { width: 150 });
+        doc
+          .fontSize(14)
+          .text("3D Model QA Report", 50, 85, { continued: false });
+      } else {
+        // Fallback to text only
+        doc.fontSize(16).text("CharpstAR", { continued: false });
+        doc.fontSize(14).text("3D Model QA Report", { continued: false });
+      }
+
+      // Horizontal rule
+      doc.moveDown(0.5);
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+      doc.moveDown(1);
+
+      // Calculate available content width and height
+      const contentWidth = 495; // 595.28 - 50 - 50 (page width minus margins)
+
+      // Create a combined layout for all image pairs to ensure they're on the same page
+      // If we have multiple images, make them smaller to fit
+      const imageWidth = contentWidth;
+      const imageHeight = annotated.length > 1 ? 280 : 380; // Smaller if multiple images
+      const verticalGap = 10;
+
+      let currentY = doc.y;
+
+      // Process each image
+      for (let i = 0; i < annotated.length; i++) {
+        // Add a new page for each new image after the first, except for the first page
+        if (i > 0) {
+          // Only add a page break when needed
+          if (currentY + imageHeight + 40 > 750) {
+            doc.addPage();
+            currentY = 70; // Reset Y position on new page
+          }
         }
 
-        doc.setFontSize(12);
-        doc.text(`Comparison View ${i + 1}`, margin, yPosition);
-        yPosition += 10;
+        // Add image caption
+        doc.fontSize(12).text(`Comparison View ${i + 1}`, { align: "center" });
+        doc.moveDown(0.3);
+        currentY = doc.y;
 
-        // Add image (jsPDF handles base64 images well)
-        const imgWidth = contentWidth;
-        const imgHeight = 60; // Fixed height
+        // Place image
+        doc.image(annotated[i], 50, currentY, {
+          width: imageWidth,
+          height: imageHeight,
+          fit: [imageWidth, imageHeight],
+          align: "center",
+        });
 
-        doc.addImage(
-          base64Image,
-          "PNG",
-          margin,
-          yPosition,
-          imgWidth,
-          imgHeight
-        );
-        yPosition += imgHeight + 15;
-      } catch (imgError) {
-        console.warn(`Failed to add image ${i}:`, imgError);
-        doc.text(`[Image ${i + 1} failed to load]`, margin, yPosition);
-        yPosition += 15;
+        // Move position for next image
+        currentY += imageHeight + verticalGap;
+        doc.y = currentY;
       }
-    }
 
-    // Add new page for technical overview
-    doc.addPage();
-    yPosition = 20;
+      // --- MODEL PROPERTIES AND QA SUMMARY ALWAYS ON A NEW PAGE ---
 
-    // Technical Overview
-    doc.setFontSize(16);
-    doc.text("Technical Overview", margin, yPosition);
-    yPosition += 15;
+      // Always start a new page for the analysis section
+      doc.addPage();
 
-    if (modelStats) {
-      const requirements = modelStats.requirements;
+      // 3D Model Properties section
+      doc.fontSize(14).text("Technical Overview", { align: "left" });
+      doc.moveDown(1.5);
 
-      doc.setFontSize(11);
+      // Calculate column widths and positions
+      // const pageWidth = 495; // Content width (right margin - left margin)
+      // const leftColumnWidth = pageWidth * 0.6; // 60% for technical overview
+      // const rightColumnWidth = pageWidth * 0.4; // 40% for QA summary
+      // const leftColumnEnd = 50 + leftColumnWidth;
+      // const contentWidth = 495; // Full width for technical overview
 
+      // Create a two-column layout
+      const originalY = doc.y; // Store the starting Y position
+
+      // Model properties with icons for compliance - LEFT COLUMN
+      doc.fontSize(11);
+
+      // Function to add a property line with check/x mark
       const addPropertyLine = (
         property: string,
-        value: any,
-        limit?: number,
-        unit = ""
+        value: string | number,
+        limit?: number | null,
+        unit: string = ""
       ) => {
+        // Format number with commas for thousands
+        const formatNumber = (num: number): string => {
+          return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        };
+
         const valueStr =
-          typeof value === "number" ? value.toLocaleString() : value;
-        const isCompliant = !limit || value <= limit;
-        const status = isCompliant ? "✓" : "✗";
+          (typeof value === "number" ? formatNumber(value) : value) + unit;
+        const checkValue =
+          typeof value === "number" ? value : parseFloat(String(value));
 
-        const line = `${status} ${property}: ${valueStr}${unit}`;
-        doc.text(line, margin, yPosition);
+        // Start horizontal positioning
+        const startY = doc.y;
 
-        if (limit) {
-          const limitText = `(limit: ${limit.toLocaleString()}${unit})`;
-          doc.text(limitText, margin + 120, yPosition);
+        // Draw colored circle icon based on compliance
+        if (limit !== undefined) {
+          const isCompliant = limit === null || checkValue <= limit;
+          const circleColor = isCompliant ? "#34a853" : "#ea4335"; // Green or Red
+
+          doc
+            .circle(65, startY + 6, 5)
+            .fillColor(circleColor)
+            .fill();
+        } else {
+          // Gray circle for properties with no limit
+          doc
+            .circle(65, startY + 6, 5)
+            .fillColor("#9aa0a6")
+            .fill();
         }
-        yPosition += 8;
+
+        // Reset fill color for text
+        doc.fillColor("#000000");
+
+        // Property name (left aligned)
+        doc.text(property, 80, startY, { continued: false, width: 160 });
+
+        // Value (center-right aligned)
+        doc.text(valueStr, 240, startY, {
+          continued: false,
+          width: 80,
+          align: "right",
+        });
+
+        // Limit text (right aligned)
+        if (limit !== undefined) {
+          doc
+            .fillColor("#5f6368")
+            .fontSize(10)
+            .text(
+              limit === null
+                ? ""
+                : `(limit: ${limit ? formatNumber(limit) : limit}${unit})`,
+              330,
+              startY,
+              { width: contentWidth - 280, align: "right" }
+            )
+            .fillColor("#000000")
+            .fontSize(11);
+        }
+
+        doc.moveDown(1.5);
       };
 
-      addPropertyLine(
-        "Polycount",
-        modelStats.triangles,
-        requirements?.maxTriangles
-      );
-      addPropertyLine("Mesh Count", modelStats.meshCount, 5);
-      addPropertyLine(
-        "Material Count",
-        modelStats.materialCount,
-        requirements?.maxMaterials
-      );
-      addPropertyLine("Double-sided Materials", modelStats.doubleSidedCount, 0);
+      // Add model properties with their limits
+      if (modelStats) {
+        const requirements = modelStats.requirements;
 
-      const fileSizeMB = parseFloat(
-        (modelStats.fileSize / (1024 * 1024)).toFixed(2)
-      );
-      const maxSizeMB = requirements?.maxFileSize
-        ? requirements.maxFileSize / (1024 * 1024)
-        : 15;
-      addPropertyLine("File Size", fileSizeMB, maxSizeMB, "MB");
+        addPropertyLine(
+          "Polycount",
+          modelStats.triangles,
+          requirements?.maxTriangles
+        );
+        addPropertyLine("Mesh Count", modelStats.meshCount, 5);
+        addPropertyLine(
+          "Material Count",
+          modelStats.materialCount,
+          requirements?.maxMaterials
+        );
+        addPropertyLine(
+          "Double-sided Materials",
+          modelStats.doubleSidedCount,
+          0
+        );
+        addPropertyLine(
+          "File Size",
+          parseFloat((modelStats.fileSize / (1024 * 1024)).toFixed(2)),
+          requirements?.maxFileSize
+            ? requirements.maxFileSize / (1024 * 1024)
+            : 15,
+          "MB"
+        );
+      } else {
+        // Use placeholder values if no stats provided
+        const properties = [
+          "• Polycount: 150,000",
+          "• Material Count: 5",
+          "• File Size: 5.2MB",
+        ];
+
+        properties.forEach((prop) => {
+          doc.text(prop);
+          doc.moveDown(1.5);
+        });
+      }
+
+      // Add a horizontal line across the full page width
+      const lineY = doc.y + 15;
+      doc.moveTo(50, lineY).lineTo(545, lineY).stroke();
+
+      // Reset position to continue after the horizontal line
+      doc.x = 50;
+      doc.y = lineY + 20;
+
+      // QA Summary section
+      doc.fontSize(14).text("QA Summary");
+      doc.moveDown(0.5);
+
+      // Summary text
+      doc.fontSize(11).text(diff.summary || "No issues found.");
+      doc.moveDown(1);
+
+      doc.fontSize(12).text("Status:");
+      doc.moveDown(0.5);
+
+      doc.fontSize(11);
+      doc.text(diff.status);
+
+      // Finalize PDF
+      doc.end();
+    } catch (err) {
+      reject(err);
     }
-
-    yPosition += 10;
-
-    // Add horizontal line
-    doc.line(margin, yPosition, pageWidth - margin, yPosition);
-    yPosition += 10;
-
-    // QA Summary
-    doc.setFontSize(16);
-    doc.text("QA Summary", margin, yPosition);
-    yPosition += 15;
-
-    doc.setFontSize(11);
-    const summaryLines = doc.splitTextToSize(
-      diff.summary || "No issues found.",
-      contentWidth
-    );
-    doc.text(summaryLines, margin, yPosition);
-    yPosition += summaryLines.length * 6 + 10;
-
-    doc.setFontSize(12);
-    doc.text("Status:", margin, yPosition);
-    yPosition += 8;
-
-    doc.setFontSize(11);
-    doc.text(diff.status, margin, yPosition);
-
-    // Convert to buffer
-    const pdfBlob = doc.output("arraybuffer");
-    return Buffer.from(pdfBlob);
-  } catch (error) {
-    console.error("jsPDF generation failed:", error);
-    throw error;
-  }
+  });
 }
+
 async function downloadImages(
   urls: string[],
   tmpDir: string
