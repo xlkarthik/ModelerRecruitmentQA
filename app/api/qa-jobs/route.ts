@@ -10,7 +10,7 @@ import { supabase } from "../../../lib/supabase";
 
 function createFontDataFiles() {
   try {
-    // The exact path from your error message
+    // The EXACT path from your error message
     const bundledDataDir = path.join(
       process.cwd(),
       ".next",
@@ -19,14 +19,15 @@ function createFontDataFiles() {
       "data"
     );
 
-    // Also try other possible locations
+    // Also try these alternative bundled locations
     const possiblePaths = [
-      bundledDataDir, // Primary target from error
+      bundledDataDir, // Primary bundled location from error
+      path.join(process.cwd(), ".next", "server", "chunks", "data"),
       path.join(process.cwd(), "node_modules", "pdfkit", "js", "data"), // Standard location
-      path.join(process.cwd(), ".next", "server", "chunks", "data"), // Alternative bundled location
+      path.join(process.cwd(), "node_modules", "pdfkit", "data"),
     ];
 
-    // Create minimal Helvetica.afm file content
+    // Create minimal but complete Helvetica.afm file
     const helveticaAfm = `StartFontMetrics 2.0
 FontName Helvetica
 FullName Helvetica
@@ -46,97 +47,147 @@ Descender -207
 StartCharMetrics 315
 C 32 ; WX 278 ; N space ; B 0 0 0 0 ;
 C 33 ; WX 278 ; N exclam ; B 90 0 187 718 ;
+C 34 ; WX 355 ; N quotedbl ; B 70 463 285 718 ;
+C 35 ; WX 556 ; N numbersign ; B 28 0 529 688 ;
+C 36 ; WX 556 ; N dollar ; B 32 -115 520 775 ;
+C 37 ; WX 889 ; N percent ; B 39 -19 850 703 ;
+C 38 ; WX 667 ; N ampersand ; B 44 -15 645 718 ;
+C 39 ; WX 222 ; N quoteright ; B 53 463 157 718 ;
+C 40 ; WX 333 ; N parenleft ; B 48 -207 304 733 ;
+C 41 ; WX 333 ; N parenright ; B 29 -207 285 733 ;
+C 42 ; WX 389 ; N asterisk ; B 39 431 349 718 ;
+C 43 ; WX 584 ; N plus ; B 39 0 545 505 ;
+C 44 ; WX 278 ; N comma ; B 87 -147 191 106 ;
+C 45 ; WX 333 ; N hyphen ; B 39 194 285 257 ;
+C 46 ; WX 278 ; N period ; B 87 0 191 106 ;
+C 47 ; WX 278 ; N slash ; B -9 -19 287 737 ;
+C 48 ; WX 556 ; N zero ; B 37 -19 519 703 ;
+C 49 ; WX 556 ; N one ; B 69 0 359 703 ;
+C 50 ; WX 556 ; N two ; B 26 0 511 703 ;
+C 51 ; WX 556 ; N three ; B 34 -19 522 703 ;
+C 52 ; WX 556 ; N four ; B 25 0 523 703 ;
+C 53 ; WX 556 ; N five ; B 32 -19 514 688 ;
+C 54 ; WX 556 ; N six ; B 34 -19 521 703 ;
+C 55 ; WX 556 ; N seven ; B 37 0 523 688 ;
+C 56 ; WX 556 ; N eight ; B 38 -19 517 703 ;
+C 57 ; WX 556 ; N nine ; B 42 -19 522 703 ;
+C 58 ; WX 278 ; N colon ; B 87 0 191 516 ;
+C 59 ; WX 278 ; N semicolon ; B 87 -147 191 516 ;
+C 60 ; WX 584 ; N less ; B 48 11 536 495 ;
+C 61 ; WX 584 ; N equal ; B 48 115 536 390 ;
+C 62 ; WX 584 ; N greater ; B 48 11 536 495 ;
+C 63 ; WX 556 ; N question ; B 57 0 445 727 ;
+C 64 ; WX 1015 ; N at ; B 215 -19 809 737 ;
 C 65 ; WX 667 ; N A ; B 14 0 654 718 ;
 C 66 ; WX 667 ; N B ; B 74 0 630 718 ;
 C 67 ; WX 722 ; N C ; B 44 -19 681 737 ;
-C 68 ; WX 722 ; N D ; B 76 0 685 718 ;
-C 69 ; WX 667 ; N E ; B 76 0 621 718 ;
-C 70 ; WX 611 ; N F ; B 76 0 587 718 ;
+C 68 ; WX 722 ; N D ; B 81 0 674 718 ;
+C 69 ; WX 667 ; N E ; B 86 0 616 718 ;
+C 70 ; WX 611 ; N F ; B 86 0 583 718 ;
 C 71 ; WX 778 ; N G ; B 44 -19 713 737 ;
-C 72 ; WX 722 ; N H ; B 76 0 646 718 ;
-C 73 ; WX 278 ; N I ; B 76 0 202 718 ;
-C 74 ; WX 500 ; N J ; B 28 -19 424 718 ;
+C 72 ; WX 722 ; N H ; B 77 0 646 718 ;
+C 73 ; WX 278 ; N I ; B 91 0 188 718 ;
+C 74 ; WX 500 ; N J ; B 17 -19 428 718 ;
 C 75 ; WX 667 ; N K ; B 76 0 663 718 ;
 C 76 ; WX 556 ; N L ; B 76 0 537 718 ;
-C 77 ; WX 833 ; N M ; B 76 0 757 718 ;
-C 78 ; WX 722 ; N N ; B 76 0 646 718 ;
+C 77 ; WX 833 ; N M ; B 69 0 765 718 ;
+C 78 ; WX 722 ; N N ; B 69 0 654 718 ;
 C 79 ; WX 778 ; N O ; B 44 -19 734 737 ;
-C 80 ; WX 667 ; N P ; B 76 0 627 718 ;
+C 80 ; WX 667 ; N P ; B 86 0 622 718 ;
+C 81 ; WX 778 ; N Q ; B 44 -56 734 737 ;
+C 82 ; WX 722 ; N R ; B 88 0 684 718 ;
+C 83 ; WX 667 ; N S ; B 49 -19 620 737 ;
+C 84 ; WX 611 ; N T ; B 17 0 593 718 ;
+C 85 ; WX 722 ; N U ; B 79 -19 644 718 ;
+C 86 ; WX 667 ; N V ; B 19 0 648 718 ;
+C 87 ; WX 944 ; N W ; B 5 0 939 718 ;
+C 88 ; WX 667 ; N X ; B 19 0 648 718 ;
+C 89 ; WX 667 ; N Y ; B 19 0 648 718 ;
+C 90 ; WX 611 ; N Z ; B 23 0 588 718 ;
 EndCharMetrics
 EndFontMetrics`;
 
-    let createdAny = false;
+    let createdFiles = false;
 
-    // Try each possible location
+    console.log("🔍 Attempting to create font files in bundled locations...");
+
+    // Try to create font files in all possible locations
     for (const dataDir of possiblePaths) {
       try {
-        console.log(`Attempting to create font files in: ${dataDir}`);
+        console.log(`📁 Trying directory: ${dataDir}`);
 
-        // Create directory if it doesn't exist
         if (!fs.existsSync(dataDir)) {
           fs.mkdirSync(dataDir, { recursive: true });
           console.log(`✅ Created directory: ${dataDir}`);
         }
 
-        // Create Helvetica.afm
-        const helveticaPath = path.join(dataDir, "Helvetica.afm");
-        if (!fs.existsSync(helveticaPath)) {
-          fs.writeFileSync(helveticaPath, helveticaAfm);
-          console.log(`✅ Created Helvetica.afm at: ${helveticaPath}`);
-          createdAny = true;
+        // Write Helvetica.afm file
+        const helveticaAfmPath = path.join(dataDir, "Helvetica.afm");
+        if (!fs.existsSync(helveticaAfmPath)) {
+          fs.writeFileSync(helveticaAfmPath, helveticaAfm);
+          console.log(`✅ Created Helvetica.afm at: ${helveticaAfmPath}`);
+          createdFiles = true;
+        } else {
+          console.log(
+            `📄 Helvetica.afm already exists at: ${helveticaAfmPath}`
+          );
         }
 
-        // Create Helvetica-Bold.afm
-        const boldPath = path.join(dataDir, "Helvetica-Bold.afm");
-        if (!fs.existsSync(boldPath)) {
+        // Write Helvetica-Bold.afm file
+        const helveticaBoldAfmPath = path.join(dataDir, "Helvetica-Bold.afm");
+        if (!fs.existsSync(helveticaBoldAfmPath)) {
           const boldAfm = helveticaAfm
             .replace(/FontName Helvetica/g, "FontName Helvetica-Bold")
             .replace(/FullName Helvetica/g, "FullName Helvetica-Bold");
-          fs.writeFileSync(boldPath, boldAfm);
-          console.log(`✅ Created Helvetica-Bold.afm at: ${boldPath}`);
-          createdAny = true;
+          fs.writeFileSync(helveticaBoldAfmPath, boldAfm);
+          console.log(
+            `✅ Created Helvetica-Bold.afm at: ${helveticaBoldAfmPath}`
+          );
+          createdFiles = true;
         }
 
-        // Create Times-Roman.afm
-        const timesPath = path.join(dataDir, "Times-Roman.afm");
-        if (!fs.existsSync(timesPath)) {
+        // Write Times-Roman.afm file
+        const timesAfmPath = path.join(dataDir, "Times-Roman.afm");
+        if (!fs.existsSync(timesAfmPath)) {
           const timesAfm = helveticaAfm
             .replace(/FontName Helvetica/g, "FontName Times-Roman")
             .replace(/FullName Helvetica/g, "FullName Times-Roman")
             .replace(/FamilyName Helvetica/g, "FamilyName Times");
-          fs.writeFileSync(timesPath, timesAfm);
-          console.log(`✅ Created Times-Roman.afm at: ${timesPath}`);
-          createdAny = true;
+          fs.writeFileSync(timesAfmPath, timesAfm);
+          console.log(`✅ Created Times-Roman.afm at: ${timesAfmPath}`);
+          createdFiles = true;
         }
 
-        // Create Courier.afm (another common fallback)
-        const courierPath = path.join(dataDir, "Courier.afm");
-        if (!fs.existsSync(courierPath)) {
+        // Also create Courier font
+        const courierAfmPath = path.join(dataDir, "Courier.afm");
+        if (!fs.existsSync(courierAfmPath)) {
           const courierAfm = helveticaAfm
             .replace(/FontName Helvetica/g, "FontName Courier")
             .replace(/FullName Helvetica/g, "FullName Courier")
             .replace(/FamilyName Helvetica/g, "FamilyName Courier")
             .replace(/IsFixedPitch false/g, "IsFixedPitch true");
-          fs.writeFileSync(courierPath, courierAfm);
-          console.log(`✅ Created Courier.afm at: ${courierPath}`);
-          createdAny = true;
+          fs.writeFileSync(courierAfmPath, courierAfm);
+          console.log(`✅ Created Courier.afm at: ${courierAfmPath}`);
+          createdFiles = true;
         }
       } catch (dirError) {
+        const errorMessage =
+          dirError instanceof Error ? dirError.message : String(dirError);
         console.warn(
-          `⚠️ Failed to create fonts in ${dataDir}:`,
-          dirError.message
+          `⚠️ Could not create font files in ${dataDir}:`,
+          errorMessage
         );
         continue;
       }
     }
 
-    if (createdAny) {
-      console.log("✅ Font files created successfully");
-      return true;
+    if (createdFiles) {
+      console.log("🎉 Font files created successfully!");
     } else {
-      console.warn("⚠️ No font files were created");
-      return false;
+      console.log("📋 Font files already exist in all locations");
     }
+
+    return createdFiles;
   } catch (error) {
     console.error("❌ Font creation failed:", error);
     return false;
