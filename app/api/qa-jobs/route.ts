@@ -300,6 +300,7 @@ function extractSimilarityScores(summary: string) {
 
   return scores;
 }
+
 async function generatePDF(
   annotated: string[],
   diff: any,
