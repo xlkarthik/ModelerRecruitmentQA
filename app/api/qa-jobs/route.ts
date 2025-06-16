@@ -301,6 +301,8 @@ function extractSimilarityScores(summary: string) {
   return scores;
 }
 // Helper: generate a 2-page PDF from annotated PNGs + diff
+// Solution 1: Always use external fonts to avoid bundling issues
+
 async function generatePDF(
   annotated: string[],
   diff: any,
@@ -309,25 +311,49 @@ async function generatePDF(
 ): Promise<Buffer> {
   return new Promise(async (resolve, reject) => {
     try {
-      // Download font from CDN
-      const fontUrl = "https://demosetc.b-cdn.net/fonts/Roboto-Regular.ttf";
-      let fontBuffer: Buffer | null = null;
+      console.log("Starting PDF generation with external fonts...");
+
+      // Download a reliable font from a CDN
+      let fontBuffer: Buffer;
 
       try {
-        const fontRes = await fetch(fontUrl);
-        if (!fontRes.ok) {
-          throw new Error(`Failed to fetch font: ${fontRes.status}`);
+        // Try multiple font sources
+        const fontSources = [
+          "https://demosetc.b-cdn.net/fonts/Roboto-Regular.ttf",
+          "https://fonts.gstatic.com/s/opensans/v34/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0B4uaVQUwaEQXjN_mQ.ttf",
+          "https://cdn.jsdelivr.net/npm/@fontsource/inter@4.5.2/files/inter-latin-400-normal.ttf",
+        ];
+
+        let fontDownloaded = false;
+        for (const fontUrl of fontSources) {
+          try {
+            console.log(`Trying to download font from: ${fontUrl}`);
+            const fontRes = await fetch(fontUrl);
+            if (fontRes.ok) {
+              fontBuffer = Buffer.from(await fontRes.arrayBuffer());
+              console.log(`✅ Font downloaded successfully from: ${fontUrl}`);
+              fontDownloaded = true;
+              break;
+            }
+          } catch (e) {
+            console.warn(`Failed to download from ${fontUrl}:`, e.message);
+            continue;
+          }
         }
-        fontBuffer = Buffer.from(await fontRes.arrayBuffer());
-        console.log("✅ Font downloaded from CDN");
+
+        if (!fontDownloaded) {
+          throw new Error("All font sources failed");
+        }
       } catch (fontError) {
-        console.error("❌ Failed to download font from CDN:", fontError);
+        console.error(
+          "❌ All external fonts failed, this will likely cause an error:",
+          fontError
+        );
+        return reject(new Error("Unable to load any fonts for PDF generation"));
       }
 
-      // Prepare for logo
+      // Download logo
       let logoBuffer: Buffer | null = null;
-
-      // Try to download the logo
       try {
         const logoRes = await fetch(
           "https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
@@ -337,10 +363,10 @@ async function generatePDF(
           console.log("✅ Logo downloaded");
         }
       } catch (logoErr) {
-        console.error("❌ Failed to download logo:", logoErr);
+        console.warn("⚠️ Failed to download logo:", logoErr);
       }
 
-      // Create PDF document with standard A4 size and minimal margins
+      // Create PDF document without relying on built-in fonts
       const doc = new PDFDocument({
         autoFirstPage: false,
         size: [595.28, 841.89], // A4 in points
@@ -354,41 +380,50 @@ async function generatePDF(
           Title: "3D Model QA Report",
           Author: "CharpstAR QA Automator",
         },
+        bufferPages: true,
+        // Don't set a default font to avoid triggering built-in font loading
       });
 
-      // Create our own data collection system
+      // Set up data collection
       const buffers: Buffer[] = [];
       doc.on("data", (chunk) => buffers.push(Buffer.from(chunk)));
-      doc.on("end", () => resolve(Buffer.concat(buffers)));
-      doc.on("error", (err) => reject(err));
+      doc.on("end", () => {
+        console.log("✅ PDF generation complete");
+        resolve(Buffer.concat(buffers));
+      });
+      doc.on("error", (err) => {
+        console.error("❌ PDF generation error:", err);
+        reject(err);
+      });
 
-      // Register font if available
-      if (fontBuffer) {
-        try {
-          doc.registerFont("MainFont", fontBuffer);
-          doc.font("MainFont");
-          console.log("✅ Custom font registered");
-        } catch (fontRegError) {
-          console.error("❌ Failed to register custom font:", fontRegError);
-          // Fall back to built-in font
-          doc.font("Helvetica");
-        }
-      } else {
-        // Use built-in font
-        doc.font("Helvetica");
+      // Register and use external font immediately
+      try {
+        doc.registerFont("MainFont", fontBuffer);
+        doc.font("MainFont");
+        console.log("✅ External font registered and set as default");
+      } catch (fontRegError) {
+        console.error("❌ Failed to register external font:", fontRegError);
+        return reject(
+          new Error(`Font registration failed: ${fontRegError.message}`)
+        );
       }
 
       // Add first page
       doc.addPage();
 
-      // --- PAGE 1: HEADER AND IMAGES ---
-
       // Header - use logo if available, otherwise text
       if (logoBuffer) {
-        doc.image(logoBuffer, 40, 40, { width: 150 });
-        doc
-          .fontSize(14)
-          .text("3D Model QA Report", 50, 85, { continued: false });
+        try {
+          doc.image(logoBuffer, 40, 40, { width: 150 });
+          doc
+            .fontSize(14)
+            .text("3D Model QA Report", 50, 85, { continued: false });
+        } catch (imgError) {
+          console.warn("⚠️ Failed to add logo to PDF:", imgError);
+          // Fallback to text only
+          doc.fontSize(16).text("CharpstAR", { continued: false });
+          doc.fontSize(14).text("3D Model QA Report", { continued: false });
+        }
       } else {
         // Fallback to text only
         doc.fontSize(16).text("CharpstAR", { continued: false });
@@ -428,19 +463,23 @@ async function generatePDF(
         currentY = doc.y;
 
         // Place image
-        doc.image(annotated[i], 50, currentY, {
-          width: imageWidth,
-          height: imageHeight,
-          fit: [imageWidth, imageHeight],
-          align: "center",
-        });
+        try {
+          doc.image(annotated[i], 50, currentY, {
+            width: imageWidth,
+            height: imageHeight,
+            fit: [imageWidth, imageHeight],
+            align: "center",
+          });
+        } catch (imgError) {
+          console.warn(`⚠️ Failed to add image ${i}:`, imgError);
+          // Continue with text placeholder
+          doc.text(`[Image ${i + 1} failed to load]`, 50, currentY);
+        }
 
         // Move position for next image
         currentY += imageHeight + verticalGap;
         doc.y = currentY;
       }
-
-      // --- MODEL PROPERTIES AND QA SUMMARY ALWAYS ON A NEW PAGE ---
 
       // Always start a new page for the analysis section
       doc.addPage();
@@ -449,17 +488,9 @@ async function generatePDF(
       doc.fontSize(14).text("Technical Overview", { align: "left" });
       doc.moveDown(1.5);
 
-      // Calculate column widths and positions
-      // const pageWidth = 495; // Content width (right margin - left margin)
-      // const leftColumnWidth = pageWidth * 0.6; // 60% for technical overview
-      // const rightColumnWidth = pageWidth * 0.4; // 40% for QA summary
-      // const leftColumnEnd = 50 + leftColumnWidth;
-      // const contentWidth = 495; // Full width for technical overview
+      const originalY = doc.y;
 
-      // Create a two-column layout
-      const originalY = doc.y; // Store the starting Y position
-
-      // Model properties with icons for compliance - LEFT COLUMN
+      // Model properties with icons for compliance
       doc.fontSize(11);
 
       // Function to add a property line with check/x mark
@@ -469,7 +500,6 @@ async function generatePDF(
         limit?: number | null,
         unit: string = ""
       ) => {
-        // Format number with commas for thousands
         const formatNumber = (num: number): string => {
           return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         };
@@ -479,20 +509,18 @@ async function generatePDF(
         const checkValue =
           typeof value === "number" ? value : parseFloat(String(value));
 
-        // Start horizontal positioning
         const startY = doc.y;
 
         // Draw colored circle icon based on compliance
         if (limit !== undefined) {
           const isCompliant = limit === null || checkValue <= limit;
-          const circleColor = isCompliant ? "#34a853" : "#ea4335"; // Green or Red
+          const circleColor = isCompliant ? "#34a853" : "#ea4335";
 
           doc
             .circle(65, startY + 6, 5)
             .fillColor(circleColor)
             .fill();
         } else {
-          // Gray circle for properties with no limit
           doc
             .circle(65, startY + 6, 5)
             .fillColor("#9aa0a6")
@@ -561,7 +589,6 @@ async function generatePDF(
           "MB"
         );
       } else {
-        // Use placeholder values if no stats provided
         const properties = [
           "• Polycount: 150,000",
           "• Material Count: 5",
@@ -599,11 +626,11 @@ async function generatePDF(
       // Finalize PDF
       doc.end();
     } catch (err) {
+      console.error("❌ PDF generation failed:", err);
       reject(err);
     }
   });
 }
-
 async function downloadImages(
   urls: string[],
   tmpDir: string
