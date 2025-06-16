@@ -2,7 +2,7 @@
 import { execFileSync } from "child_process";
 import fs from "fs";
 import path from "path";
-import { jsPDF } from "jspdf";
+import { jsPDF } from 'jspdf';
 import { v4 as uuidv4 } from "uuid";
 import { NextRequest, NextResponse } from "next/server";
 
