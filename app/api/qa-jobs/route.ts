@@ -311,7 +311,7 @@ async function generatePDF(
     try {
       // Download font from CDN
       const fontUrl = "https://demosetc.b-cdn.net/fonts/Roboto-Regular.ttf";
-      let fontBuffer: Buffer | null = null;
+let fontBuffer: Buffer | null = null;
 
       try {
         const fontRes = await fetch(fontUrl);
@@ -322,6 +322,8 @@ async function generatePDF(
         console.log("✅ Font downloaded from CDN");
       } catch (fontError) {
         console.error("❌ Failed to download font from CDN:", fontError);
+        // Fallback to default system font
+        fontBuffer = null;
       }
 
       // Prepare for logo
