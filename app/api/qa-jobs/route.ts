@@ -300,20 +300,6 @@ function extractSimilarityScores(summary: string) {
 
   return scores;
 }
-// Helper: generate a 2-page PDF from annotated PNGs + diff
-// Solution 1: Always use external fonts to avoid bundling issues
-
-// Complete generatePDF function with all TypeScript errors fixed
-
-// COMPLETE SOLUTION: Replace PDFKit with jsPDF
-// First install: npm install jspdf html2canvas
-
-// Complete PDFKit solution that avoids default font loading issues
-
-// Complete PDFKit solution that avoids default font loading issues
-
-// jsPDF implementation that matches PDFKit layout exactly
-
 async function generatePDF(
   annotated: string[],
   diff: any,
