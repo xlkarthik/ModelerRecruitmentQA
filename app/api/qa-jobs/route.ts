@@ -312,6 +312,9 @@ import { jsPDF } from "jspdf";
 
 // Complete PDFKit solution that avoids default font loading issues
 
+// Complete PDFKit solution that avoids default font loading issues
+
+import PDFDocument from "pdfkit";
 
 async function generatePDF(
   annotated: string[],
@@ -324,7 +327,7 @@ async function generatePDF(
       console.log("Starting PDF generation with external fonts only...");
 
       // Download external font FIRST - this is critical
-      let fontBuffer: Buffer;
+      let fontBuffer: Buffer | null = null;
 
       try {
         const fontSources = [
@@ -350,7 +353,7 @@ async function generatePDF(
           }
         }
 
-        if (!fontDownloaded) {
+        if (!fontDownloaded || !fontBuffer) {
           throw new Error("Failed to download any fonts");
         }
       } catch (fontError) {
@@ -407,6 +410,9 @@ async function generatePDF(
 
       // CRITICAL: Register font BEFORE adding any pages or content
       try {
+        if (!fontBuffer) {
+          throw new Error("No font buffer available");
+        }
         doc.registerFont("MainFont", fontBuffer);
         console.log("✅ Font registered successfully");
       } catch (fontRegError) {
