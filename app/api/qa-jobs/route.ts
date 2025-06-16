@@ -323,7 +323,6 @@ async function generatePDF(
       } catch (fontError) {
         console.error("❌ Failed to download font from CDN:", fontError);
         // Fallback to default system font
-        fontBuffer = null;
       }
 
       // Prepare for logo
