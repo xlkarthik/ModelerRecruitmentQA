@@ -19,10 +19,8 @@ class QAJobQueue {
     retryCount: number;
   }> = [];
   private processing = false;
-  private maxConcurrentJobs = parseInt(
-    process.env.MAX_CONCURRENT_QA_JOBS || "3"
-  ); // Configurable via env var
-  private maxQueueSize = parseInt(process.env.MAX_QUEUE_SIZE || "20"); // Max jobs that can wait in queue
+  private maxConcurrentJobs = parseInt(process.env.MAX_CONCURRENT_QA_JOBS || '3'); // Configurable via env var
+  private maxQueueSize = parseInt(process.env.MAX_QUEUE_SIZE || '20'); // Max jobs that can wait in queue
   private activeJobs = new Set<string>();
   private maxRetries = 2;
 
@@ -33,33 +31,27 @@ class QAJobQueue {
     return QAJobQueue.instance;
   }
 
-  async addJob(
-    jobId: string,
-    renders: string[],
-    references: string[],
-    modelStats?: ModelStats
-  ) {
+  async addJob(jobId: string, renders: string[], references: string[], modelStats?: ModelStats) {
     // Check if queue is full
     if (this.queue.length >= this.maxQueueSize) {
-      throw new Error(
-        `Queue is full. Maximum ${this.maxQueueSize} jobs can be queued. Please try again later.`
-      );
+      throw new Error(`Queue is full. Maximum ${this.maxQueueSize} jobs can be queued. Please try again later.`);
     }
 
-    console.log(
-      `Adding job ${jobId} to queue. Queue length: ${this.queue.length}/${this.maxQueueSize}`
-    );
-
+    console.log(`Adding job ${jobId} to queue. Queue length: ${this.queue.length}/${this.maxQueueSize}`);
+    
     this.queue.push({
       jobId,
       renders,
       references,
       modelStats,
-      retryCount: 0,
+      retryCount: 0
     });
 
     // Update job status to queued
-    await supabase.from("qa_jobs").update({ status: "queued" }).eq("id", jobId);
+    await supabase
+      .from("qa_jobs")
+      .update({ status: "queued" })
+      .eq("id", jobId);
 
     this.processQueue();
   }
@@ -71,28 +63,19 @@ class QAJobQueue {
 
     this.processing = true;
 
-    while (
-      this.queue.length > 0 &&
-      this.activeJobs.size < this.maxConcurrentJobs
-    ) {
+    while (this.queue.length > 0 && this.activeJobs.size < this.maxConcurrentJobs) {
       const job = this.queue.shift();
       if (!job) break;
 
-      console.log(
-        `Starting job ${job.jobId}. Active jobs: ${this.activeJobs.size + 1}/${
-          this.maxConcurrentJobs
-        }`
-      );
-
+      console.log(`Starting job ${job.jobId}. Active jobs: ${this.activeJobs.size + 1}/${this.maxConcurrentJobs}`);
+      
       this.activeJobs.add(job.jobId);
 
       // Process job asynchronously
       this.processJob(job).finally(() => {
         this.activeJobs.delete(job.jobId);
-        console.log(
-          `Completed job ${job.jobId}. Active jobs: ${this.activeJobs.size}/${this.maxConcurrentJobs}`
-        );
-
+        console.log(`Completed job ${job.jobId}. Active jobs: ${this.activeJobs.size}/${this.maxConcurrentJobs}`);
+        
         // Continue processing queue
         setTimeout(() => this.processQueue(), 100);
       });
@@ -109,47 +92,29 @@ class QAJobQueue {
     retryCount: number;
   }) {
     try {
-      await processQAJob(
-        job.jobId,
-        job.renders,
-        job.references,
-        job.modelStats
-      );
+      await processQAJob(job.jobId, job.renders, job.references, job.modelStats);
     } catch (error: any) {
-      console.error(
-        `Job ${job.jobId} failed (attempt ${job.retryCount + 1}):`,
-        error.message
-      );
-
+      console.error(`Job ${job.jobId} failed (attempt ${job.retryCount + 1}):`, error.message);
+      
       // Retry logic
       if (job.retryCount < this.maxRetries) {
         job.retryCount++;
-        console.log(
-          `Retrying job ${job.jobId} (attempt ${job.retryCount + 1}/${
-            this.maxRetries + 1
-          })`
-        );
-
+        console.log(`Retrying job ${job.jobId} (attempt ${job.retryCount + 1}/${this.maxRetries + 1})`);
+        
         // Add back to queue with delay
         setTimeout(() => {
           this.queue.unshift(job); // Add to front of queue for priority retry
           this.processQueue();
         }, 5000 * job.retryCount); // Exponential backoff: 5s, 10s, 15s
       } else {
-        console.error(
-          `Job ${job.jobId} failed permanently after ${
-            this.maxRetries + 1
-          } attempts`
-        );
-
+        console.error(`Job ${job.jobId} failed permanently after ${this.maxRetries + 1} attempts`);
+        
         // Mark as permanently failed
         await supabase
           .from("qa_jobs")
           .update({
             status: "failed",
-            error: `Failed after ${this.maxRetries + 1} attempts: ${
-              error.message
-            }`,
+            error: `Failed after ${this.maxRetries + 1} attempts: ${error.message}`,
             end_time: new Date(),
           })
           .eq("id", job.jobId);
@@ -165,13 +130,13 @@ class QAJobQueue {
       activeJobs: this.activeJobs.size,
       maxConcurrentJobs: this.maxConcurrentJobs,
       processing: this.processing,
-      queueFull: this.queue.length >= this.maxQueueSize,
+      queueFull: this.queue.length >= this.maxQueueSize
     };
   }
 
   // Get position of job in queue
   getJobPosition(jobId: string): number {
-    const position = this.queue.findIndex((job) => job.jobId === jobId);
+    const position = this.queue.findIndex(job => job.jobId === jobId);
     return position === -1 ? -1 : position + 1; // Return 1-based position, -1 if not found
   }
 }
@@ -181,36 +146,32 @@ const rateLimiter = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
 const RATE_LIMIT_MAX_REQUESTS = 5; // Max 5 requests per 15 minutes per IP
 
-function checkRateLimit(ip: string): {
-  allowed: boolean;
-  remaining: number;
-  resetTime: number;
-} {
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number; resetTime: number } {
   const now = Date.now();
-  const key = ip || "unknown";
-
+  const key = ip || 'unknown';
+  
   let limiter = rateLimiter.get(key);
-
+  
   // Reset if window expired
   if (!limiter || now > limiter.resetTime) {
     limiter = {
       count: 0,
-      resetTime: now + RATE_LIMIT_WINDOW,
+      resetTime: now + RATE_LIMIT_WINDOW
     };
   }
-
+  
   const allowed = limiter.count < RATE_LIMIT_MAX_REQUESTS;
-
+  
   if (allowed) {
     limiter.count++;
   }
-
+  
   rateLimiter.set(key, limiter);
-
+  
   return {
     allowed,
     remaining: Math.max(0, RATE_LIMIT_MAX_REQUESTS - limiter.count),
-    resetTime: limiter.resetTime,
+    resetTime: limiter.resetTime
   };
 }
 
@@ -267,7 +228,7 @@ type QAResults = {
 // Helper function to extract similarity scores from GPT summary
 function extractSimilarityScores(summary: string) {
   const scores: any = {};
-
+  
   // More robust patterns to catch different formats
   const patterns: Record<string, RegExp> = {
     silhouette: /silhouette[:\s]*(\d+)%/i,
@@ -275,7 +236,7 @@ function extractSimilarityScores(summary: string) {
     colorMaterial: /(?:color[\/\-\s]*material|color|material)[:\s]*(\d+)%/i,
     overall: /overall[:\s]*(\d+)%/i,
   };
-
+  
   // Also try these alternative patterns
   const alternativePatterns: Record<string, RegExp> = {
     silhouette: /(\d+)%[^,]*silhouette/i,
@@ -283,7 +244,7 @@ function extractSimilarityScores(summary: string) {
     colorMaterial: /(\d+)%[^,]*(?:color[\/\-\s]*material|color|material)/i,
     overall: /(\d+)%[^,]*overall/i,
   };
-
+  
   for (const [key, pattern] of Object.entries(patterns)) {
     let match = summary.match(pattern);
     if (!match) {
@@ -294,11 +255,12 @@ function extractSimilarityScores(summary: string) {
       scores[key] = parseInt(match[1]);
     }
   }
-
-  console.log("Extracted similarity scores:", scores);
-  console.log("From summary:", summary);
-
+  
+  console.log('Extracted similarity scores:', scores);
+  console.log('From summary:', summary);
+  
   return scores;
+};
 }
 
 // Helper: generate a 2-page PDF from annotated PNGs + diff
@@ -310,12 +272,25 @@ async function generatePDF(
 ): Promise<Buffer> {
   return new Promise(async (resolve, reject) => {
     try {
-      // Get path to Roboto font
-      const ttf = path.join(process.cwd(), "fonts", "Roboto-Regular.ttf");
+      // Download font from CDN
+      const fontUrl = "https://demosetc.b-cdn.net/fonts/Roboto-Regular.ttf";
+      let fontBuffer: Buffer;
+      
+      try {
+        const fontRes = await fetch(fontUrl);
+        if (!fontRes.ok) {
+          throw new Error(`Failed to fetch font: ${fontRes.status}`);
+        }
+        fontBuffer = Buffer.from(await fontRes.arrayBuffer());
+        console.log("✅ Font downloaded from CDN");
+      } catch (fontError) {
+        console.error("❌ Failed to download font from CDN:", fontError);
+        // Fallback to default system font
+        fontBuffer = null;
+      }
 
       // Prepare for logo
-      const logoPath = path.join(tmpDir || process.cwd(), "logo.png");
-      let hasLogo = false;
+      let logoBuffer: Buffer | null = null;
 
       // Try to download the logo
       try {
@@ -323,12 +298,11 @@ async function generatePDF(
           "https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
         );
         if (logoRes.ok) {
-          const logoBuffer = Buffer.from(await logoRes.arrayBuffer());
-          fs.writeFileSync(logoPath, logoBuffer);
-          hasLogo = true;
+          logoBuffer = Buffer.from(await logoRes.arrayBuffer());
+          console.log("✅ Logo downloaded");
         }
       } catch (logoErr) {
-        console.error("Failed to download logo:", logoErr);
+        console.error("❌ Failed to download logo:", logoErr);
       }
 
       // Create PDF document with standard A4 size and minimal margins
@@ -341,7 +315,6 @@ async function generatePDF(
           left: 50,
           right: 50,
         },
-        font: ttf,
         info: {
           Title: "3D Model QA Report",
           Author: "CharpstAR QA Automator",
@@ -354,8 +327,11 @@ async function generatePDF(
       doc.on("end", () => resolve(Buffer.concat(buffers)));
       doc.on("error", (err) => reject(err));
 
-      // Register our font
-      doc.registerFont("MainFont", ttf);
+      // Register font if available
+      if (fontBuffer) {
+        doc.registerFont("MainFont", fontBuffer);
+        doc.font("MainFont");
+      }
 
       // Add first page
       doc.addPage();
@@ -363,17 +339,14 @@ async function generatePDF(
       // --- PAGE 1: HEADER AND IMAGES ---
 
       // Header - use logo if available, otherwise text
-      if (hasLogo) {
-        doc.image(logoPath, 40, 40, { width: 150 });
+      if (logoBuffer) {
+        doc.image(logoBuffer, 40, 40, { width: 150 });
         doc
           .fontSize(14)
           .text("3D Model QA Report", 50, 85, { continued: false });
       } else {
-        // Fallback to original behavior
-        doc
-          .font("MainFont")
-          .fontSize(16)
-          .text("CharpstAR", { continued: false });
+        // Fallback to text only
+        doc.fontSize(16).text("CharpstAR", { continued: false });
         doc.fontSize(14).text("3D Model QA Report", { continued: false });
       }
 
@@ -517,18 +490,10 @@ async function generatePDF(
       // Add model properties with their limits
       if (modelStats) {
         const requirements = modelStats.requirements;
-
-        addPropertyLine(
-          "Polycount",
-          modelStats.triangles,
-          requirements?.maxTriangles
-        );
+        
+        addPropertyLine("Polycount", modelStats.triangles, requirements?.maxTriangles);
         addPropertyLine("Mesh Count", modelStats.meshCount, 5);
-        addPropertyLine(
-          "Material Count",
-          modelStats.materialCount,
-          requirements?.maxMaterials
-        );
+        addPropertyLine("Material Count", modelStats.materialCount, requirements?.maxMaterials);
         addPropertyLine(
           "Double-sided Materials",
           modelStats.doubleSidedCount,
@@ -537,9 +502,7 @@ async function generatePDF(
         addPropertyLine(
           "File Size",
           parseFloat((modelStats.fileSize / (1024 * 1024)).toFixed(2)),
-          requirements?.maxFileSize
-            ? requirements.maxFileSize / (1024 * 1024)
-            : 15,
+          requirements?.maxFileSize ? requirements.maxFileSize / (1024 * 1024) : 15,
           "MB"
         );
       } else {
@@ -586,10 +549,7 @@ async function generatePDF(
   });
 }
 
-async function downloadImages(
-  urls: string[],
-  tmpDir: string
-): Promise<string[]> {
+async function downloadImages(urls: string[], tmpDir: string): Promise<string[]> {
   const allPaths: string[] = [];
   for (let idx = 0; idx < urls.length; idx++) {
     const url = urls[idx];
@@ -756,7 +716,7 @@ async function processQAJob(
     const raw = aiJson.choices[0].message.content
       .replace(/```json|```/g, "")
       .trim();
-
+    
     let qaResults: QAResults;
     try {
       qaResults = JSON.parse(raw);
@@ -770,8 +730,8 @@ async function processQAJob(
     // Store QA results in database
     await supabase
       .from("qa_jobs")
-      .update({
-        qa_results: JSON.stringify(qaResults),
+      .update({ 
+        qa_results: JSON.stringify(qaResults)
       })
       .eq("id", jobId);
 
@@ -803,9 +763,7 @@ async function processQAJob(
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(
-        `Annotator server error: ${response.status} - ${errorText}`
-      );
+      throw new Error(`Annotator server error: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();
@@ -833,7 +791,7 @@ async function processQAJob(
 
     // Generate PDF with QA results
     const pdfBuf = await generatePDF(annotated, qaResults, modelStats, tmpDir);
-
+    
     // Save PDF
     await fetch("http://45.76.82.207:8080/save-pdf", {
       method: "POST",
@@ -845,7 +803,7 @@ async function processQAJob(
     });
 
     const pdfPath = `http://45.76.82.207:8080/saved_pdfs/qa-report-${jobId}.pdf`;
-
+    
     // Update job as complete
     await supabase
       .from("qa_jobs")
@@ -860,7 +818,7 @@ async function processQAJob(
     return { jobId, status: "complete", pdfPath };
   } catch (error: any) {
     console.error(`Job ${jobId} failed:`, error);
-
+    
     await supabase
       .from("qa_jobs")
       .update({
@@ -869,7 +827,7 @@ async function processQAJob(
         end_time: new Date(),
       })
       .eq("id", jobId);
-
+    
     throw error;
   }
 }
@@ -878,35 +836,30 @@ async function processQAJob(
 export async function POST(request: NextRequest) {
   try {
     // Get client IP for rate limiting
-    const ip =
-      request.ip ||
-      request.headers.get("x-forwarded-for") ||
-      request.headers.get("x-real-ip") ||
-      "unknown";
-
+    const ip = request.ip || request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    
     // Check rate limit
     const rateLimit = checkRateLimit(ip);
     if (!rateLimit.allowed) {
       const resetDate = new Date(rateLimit.resetTime).toISOString();
       return NextResponse.json(
-        {
+        { 
           error: "Rate limit exceeded. Please try again later.",
           retryAfter: rateLimit.resetTime,
-          resetTime: resetDate,
+          resetTime: resetDate
         },
-        {
+        { 
           status: 429,
           headers: {
-            "X-RateLimit-Limit": RATE_LIMIT_MAX_REQUESTS.toString(),
-            "X-RateLimit-Remaining": rateLimit.remaining.toString(),
-            "X-RateLimit-Reset": rateLimit.resetTime.toString(),
-          },
+            'X-RateLimit-Limit': RATE_LIMIT_MAX_REQUESTS.toString(),
+            'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+            'X-RateLimit-Reset': rateLimit.resetTime.toString(),
+          }
         }
       );
     }
 
-    const { renders, references, modelStats, worktestLevel } =
-      await request.json();
+    const { renders, references, modelStats, worktestLevel } = await request.json();
 
     // Validation
     if (!Array.isArray(renders) || renders.length !== 4) {
@@ -916,11 +869,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (
-      !Array.isArray(references) ||
-      references.length < 1 ||
-      references.length > 5
-    ) {
+    if (!Array.isArray(references) || references.length < 1 || references.length > 5) {
       return NextResponse.json(
         { error: "Must send 1-5 reference images" },
         { status: 400 }
@@ -929,13 +878,13 @@ export async function POST(request: NextRequest) {
 
     // Generate job ID and create job record
     const jobId = uuidv4();
-    const { error: insertError } = await supabase.from("qa_jobs").insert([
-      {
-        id: jobId,
-        status: "pending",
-        start_time: new Date(),
-      },
-    ]);
+    const { error: insertError } = await supabase
+      .from("qa_jobs")
+      .insert([{ 
+        id: jobId, 
+        status: "pending", 
+        start_time: new Date()
+      }]);
 
     if (insertError) {
       console.error("Failed to create job:", insertError);
@@ -947,24 +896,24 @@ export async function POST(request: NextRequest) {
 
     // Add job to queue
     const queue = QAJobQueue.getInstance();
-
+    
     try {
       await queue.addJob(jobId, renders, references, modelStats);
     } catch (queueError: any) {
       // Queue is full - clean up the job we just created
       await supabase
         .from("qa_jobs")
-        .update({
-          status: "failed",
+        .update({ 
+          status: "failed", 
           error: queueError.message,
-          end_time: new Date(),
+          end_time: new Date()
         })
         .eq("id", jobId);
 
       return NextResponse.json(
-        {
+        { 
           error: queueError.message,
-          queueStatus: queue.getQueueStatus(),
+          queueStatus: queue.getQueueStatus()
         },
         { status: 503 } // Service Unavailable
       );
@@ -974,33 +923,27 @@ export async function POST(request: NextRequest) {
     const queueStatus = queue.getQueueStatus();
     const position = queue.getJobPosition(jobId);
 
-    console.log(
-      `QA job ${jobId} created and queued. Position: ${position}, Queue status:`,
-      queueStatus
-    );
+    console.log(`QA job ${jobId} created and queued. Position: ${position}, Queue status:`, queueStatus);
 
-    return NextResponse.json(
-      {
-        jobId,
-        status: "queued",
-        queuePosition: position,
-        estimatedWaitTime: position * 2, // Rough estimate: 2 minutes per job ahead
-        queueInfo: {
-          position: position,
-          totalInQueue: queueStatus.queueLength,
-          activeJobs: queueStatus.activeJobs,
-          maxConcurrent: queueStatus.maxConcurrentJobs,
-        },
-      },
-      {
-        status: 202,
-        headers: {
-          "X-RateLimit-Limit": RATE_LIMIT_MAX_REQUESTS.toString(),
-          "X-RateLimit-Remaining": rateLimit.remaining.toString(),
-          "X-RateLimit-Reset": rateLimit.resetTime.toString(),
-        },
+    return NextResponse.json({ 
+      jobId, 
+      status: "queued",
+      queuePosition: position,
+      estimatedWaitTime: position * 2, // Rough estimate: 2 minutes per job ahead
+      queueInfo: {
+        position: position,
+        totalInQueue: queueStatus.queueLength,
+        activeJobs: queueStatus.activeJobs,
+        maxConcurrent: queueStatus.maxConcurrentJobs
       }
-    );
+    }, { 
+      status: 202,
+      headers: {
+        'X-RateLimit-Limit': RATE_LIMIT_MAX_REQUESTS.toString(),
+        'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+        'X-RateLimit-Reset': rateLimit.resetTime.toString(),
+      }
+    });
   } catch (err: any) {
     console.error("POST /api/qa-jobs error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -1019,10 +962,10 @@ export async function GET(request: NextRequest) {
       if (includeQueue) {
         const queue = QAJobQueue.getInstance();
         return NextResponse.json({
-          queueStatus: queue.getQueueStatus(),
+          queueStatus: queue.getQueueStatus()
         });
       }
-
+      
       return NextResponse.json(
         { error: "Missing jobId parameter" },
         { status: 400 }
@@ -1045,12 +988,10 @@ export async function GET(request: NextRequest) {
     if (job.qa_results) {
       try {
         qaResults = JSON.parse(job.qa_results);
-
+        
         // Ensure similarity scores are included
         if (qaResults.summary && !qaResults.similarityScores) {
-          qaResults.similarityScores = extractSimilarityScores(
-            qaResults.summary
-          );
+          qaResults.similarityScores = extractSimilarityScores(qaResults.summary);
         }
       } catch (e) {
         console.error("Failed to parse QA results:", e);
@@ -1063,13 +1004,13 @@ export async function GET(request: NextRequest) {
       const queue = QAJobQueue.getInstance();
       const position = queue.getJobPosition(jobId);
       const queueStatus = queue.getQueueStatus();
-
+      
       queueInfo = {
         position: position > 0 ? position : null,
         totalInQueue: queueStatus.queueLength,
         activeJobs: queueStatus.activeJobs,
         maxConcurrent: queueStatus.maxConcurrentJobs,
-        estimatedWaitTime: position > 0 ? position * 2 : 0,
+        estimatedWaitTime: position > 0 ? position * 2 : 0
       };
     }
 
