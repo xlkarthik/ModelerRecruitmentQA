@@ -311,7 +311,7 @@ async function generatePDF(
     try {
       // Download font from CDN
       const fontUrl = "https://demosetc.b-cdn.net/fonts/Roboto-Regular.ttf";
-      let fontBuffer: Buffer | null;
+      let fontBuffer: Buffer | null = null;
 
       try {
         const fontRes = await fetch(fontUrl);
