@@ -8,6 +8,35 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { supabase } from "../../../lib/supabase";
 
+function patchPDFKit() {
+  // Override the StandardFont constructor to prevent file system access
+  const originalStandardFont = (PDFDocument as any).StandardFont;
+  if (originalStandardFont) {
+    (PDFDocument as any).StandardFont = class PatchedStandardFont {
+      constructor(name: string) {
+        // Don't call super() to avoid file system access
+        this.name = name;
+        this.ascender = 800;
+        this.descender = -200;
+        this.bbox = [0, 0, 1000, 1000];
+        this.lineGap = 0;
+      }
+    };
+  }
+
+  // Override font loading methods
+  const originalPDFDocument = PDFDocument;
+  const originalInitFonts = originalPDFDocument.prototype.initFonts;
+
+  originalPDFDocument.prototype.initFonts = function () {
+    // Skip default font initialization
+    this._fontFamilies = {};
+    this._fontCount = 0;
+    this._fontSize = 12;
+    this._font = null;
+  };
+}
+
 // Job Queue Implementation
 class QAJobQueue {
   private static instance: QAJobQueue;
