@@ -341,6 +341,40 @@ function extractSimilarityScores(summary: string) {
 
 // Complete PDFKit solution that avoids default font loading issues
 
+// Working PDFKit solution - patches font loading to work in bundled environments
+
+import PDFDocument from "pdfkit";
+
+// Patch PDFKit to prevent default font loading
+function patchPDFKit() {
+  // Override the StandardFont constructor to prevent file system access
+  const originalStandardFont = (PDFDocument as any).StandardFont;
+  if (originalStandardFont) {
+    (PDFDocument as any).StandardFont = class PatchedStandardFont {
+      constructor(name: string) {
+        // Don't call super() to avoid file system access
+        this.name = name;
+        this.ascender = 800;
+        this.descender = -200;
+        this.bbox = [0, 0, 1000, 1000];
+        this.lineGap = 0;
+      }
+    };
+  }
+
+  // Override font loading methods
+  const originalPDFDocument = PDFDocument;
+  const originalInitFonts = originalPDFDocument.prototype.initFonts;
+
+  originalPDFDocument.prototype.initFonts = function () {
+    // Skip default font initialization
+    this._fontFamilies = {};
+    this._fontCount = 0;
+    this._fontSize = 12;
+    this._font = null;
+  };
+}
+
 async function generatePDF(
   annotated: string[],
   diff: any,
@@ -349,7 +383,10 @@ async function generatePDF(
 ): Promise<Buffer> {
   return new Promise(async (resolve, reject) => {
     try {
-      console.log("Starting PDF generation...");
+      console.log("Starting PDF generation with patched PDFKit...");
+
+      // Apply the patch before creating any PDFDocument
+      patchPDFKit();
 
       // Download external font
       let fontBuffer: Buffer | null = null;
@@ -382,7 +419,7 @@ async function generatePDF(
         console.warn("⚠️ Logo download failed");
       }
 
-      // CRITICAL: Create document WITHOUT triggering font initialization
+      // Create PDF document - should not trigger font loading now
       const doc = new PDFDocument({
         autoFirstPage: false,
         size: [595.28, 841.89],
@@ -391,14 +428,8 @@ async function generatePDF(
           Title: "3D Model QA Report",
           Author: "CharpstAR QA Automator",
         },
-        // This prevents default font loading
         bufferPages: true,
-        font: undefined, // Don't set any default font
       });
-
-      // Override the default font loading behavior
-      (doc as any)._fontFamilies = {};
-      (doc as any)._fontCount = 0;
 
       const buffers: Buffer[] = [];
       doc.on("data", (chunk) => buffers.push(Buffer.from(chunk)));
@@ -411,7 +442,7 @@ async function generatePDF(
         reject(err);
       });
 
-      // Register font IMMEDIATELY
+      // Register font IMMEDIATELY after document creation
       if (!fontBuffer) {
         return reject(new Error("No font buffer available"));
       }
