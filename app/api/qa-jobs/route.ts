@@ -314,6 +314,7 @@ async function generatePDF(
       console.log("Starting PDF generation with external fonts...");
 
       // Download a reliable font from a CDN
+      let fontBuffer: Buffer;
       let fontBuffer: Buffer | null = null;
 
       try {
