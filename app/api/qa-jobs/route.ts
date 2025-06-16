@@ -2,7 +2,7 @@
 import { execFileSync } from "child_process";
 import fs from "fs";
 import path from "path";
-import PDFDocument from "pdfkit";
+import PDFDocument from "pdfkit/js/pdfkit.standalone.js";
 import { v4 as uuidv4 } from "uuid";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -307,7 +307,6 @@ function extractSimilarityScores(summary: string) {
 
 // COMPLETE SOLUTION: Replace PDFKit with jsPDF
 // First install: npm install jspdf html2canvas
-
 
 // Complete PDFKit solution that avoids default font loading issues
 
