@@ -364,8 +364,18 @@ async function generatePDF(
 
       // Register font if available
       if (fontBuffer) {
-        doc.registerFont("MainFont", fontBuffer);
-        doc.font("MainFont");
+        try {
+          doc.registerFont("MainFont", fontBuffer);
+          doc.font("MainFont");
+          console.log("✅ Custom font registered");
+        } catch (fontRegError) {
+          console.error("❌ Failed to register custom font:", fontRegError);
+          // Fall back to built-in font
+          doc.font("Helvetica");
+        }
+      } else {
+        // Use built-in font
+        doc.font("Helvetica");
       }
 
       // Add first page
