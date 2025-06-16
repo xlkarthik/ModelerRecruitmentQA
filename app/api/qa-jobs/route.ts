@@ -11,13 +11,19 @@ import { supabase } from "../../../lib/supabase";
 function createFontDataFiles() {
   try {
     // The exact path from your error message
-    const bundledDataDir = path.join(process.cwd(), '.next', 'server', 'vendor-chunks', 'data');
-    
+    const bundledDataDir = path.join(
+      process.cwd(),
+      ".next",
+      "server",
+      "vendor-chunks",
+      "data"
+    );
+
     // Also try other possible locations
     const possiblePaths = [
       bundledDataDir, // Primary target from error
-      path.join(process.cwd(), 'node_modules', 'pdfkit', 'js', 'data'), // Standard location
-      path.join(process.cwd(), '.next', 'server', 'chunks', 'data'), // Alternative bundled location
+      path.join(process.cwd(), "node_modules", "pdfkit", "js", "data"), // Standard location
+      path.join(process.cwd(), ".next", "server", "chunks", "data"), // Alternative bundled location
     ];
 
     // Create minimal Helvetica.afm file content
@@ -65,7 +71,7 @@ EndFontMetrics`;
     for (const dataDir of possiblePaths) {
       try {
         console.log(`Attempting to create font files in: ${dataDir}`);
-        
+
         // Create directory if it doesn't exist
         if (!fs.existsSync(dataDir)) {
           fs.mkdirSync(dataDir, { recursive: true });
@@ -73,7 +79,7 @@ EndFontMetrics`;
         }
 
         // Create Helvetica.afm
-        const helveticaPath = path.join(dataDir, 'Helvetica.afm');
+        const helveticaPath = path.join(dataDir, "Helvetica.afm");
         if (!fs.existsSync(helveticaPath)) {
           fs.writeFileSync(helveticaPath, helveticaAfm);
           console.log(`✅ Created Helvetica.afm at: ${helveticaPath}`);
@@ -81,57 +87,58 @@ EndFontMetrics`;
         }
 
         // Create Helvetica-Bold.afm
-        const boldPath = path.join(dataDir, 'Helvetica-Bold.afm');
+        const boldPath = path.join(dataDir, "Helvetica-Bold.afm");
         if (!fs.existsSync(boldPath)) {
           const boldAfm = helveticaAfm
-            .replace(/FontName Helvetica/g, 'FontName Helvetica-Bold')
-            .replace(/FullName Helvetica/g, 'FullName Helvetica-Bold');
+            .replace(/FontName Helvetica/g, "FontName Helvetica-Bold")
+            .replace(/FullName Helvetica/g, "FullName Helvetica-Bold");
           fs.writeFileSync(boldPath, boldAfm);
           console.log(`✅ Created Helvetica-Bold.afm at: ${boldPath}`);
           createdAny = true;
         }
 
         // Create Times-Roman.afm
-        const timesPath = path.join(dataDir, 'Times-Roman.afm');
+        const timesPath = path.join(dataDir, "Times-Roman.afm");
         if (!fs.existsSync(timesPath)) {
           const timesAfm = helveticaAfm
-            .replace(/FontName Helvetica/g, 'FontName Times-Roman')
-            .replace(/FullName Helvetica/g, 'FullName Times-Roman')
-            .replace(/FamilyName Helvetica/g, 'FamilyName Times');
+            .replace(/FontName Helvetica/g, "FontName Times-Roman")
+            .replace(/FullName Helvetica/g, "FullName Times-Roman")
+            .replace(/FamilyName Helvetica/g, "FamilyName Times");
           fs.writeFileSync(timesPath, timesAfm);
           console.log(`✅ Created Times-Roman.afm at: ${timesPath}`);
           createdAny = true;
         }
 
         // Create Courier.afm (another common fallback)
-        const courierPath = path.join(dataDir, 'Courier.afm');
+        const courierPath = path.join(dataDir, "Courier.afm");
         if (!fs.existsSync(courierPath)) {
           const courierAfm = helveticaAfm
-            .replace(/FontName Helvetica/g, 'FontName Courier')
-            .replace(/FullName Helvetica/g, 'FullName Courier')
-            .replace(/FamilyName Helvetica/g, 'FamilyName Courier')
-            .replace(/IsFixedPitch false/g, 'IsFixedPitch true');
+            .replace(/FontName Helvetica/g, "FontName Courier")
+            .replace(/FullName Helvetica/g, "FullName Courier")
+            .replace(/FamilyName Helvetica/g, "FamilyName Courier")
+            .replace(/IsFixedPitch false/g, "IsFixedPitch true");
           fs.writeFileSync(courierPath, courierAfm);
           console.log(`✅ Created Courier.afm at: ${courierPath}`);
           createdAny = true;
         }
-
       } catch (dirError) {
-        console.warn(`⚠️ Failed to create fonts in ${dataDir}:`, dirError.message);
+        console.warn(
+          `⚠️ Failed to create fonts in ${dataDir}:`,
+          dirError.message
+        );
         continue;
       }
     }
 
     if (createdAny) {
-      console.log('✅ Font files created successfully');
+      console.log("✅ Font files created successfully");
       return true;
     } else {
-      console.warn('⚠️ No font files were created');
+      console.warn("⚠️ No font files were created");
       return false;
     }
-
   } catch (error) {
-    console.error('❌ Font creation failed:', error);
+    console.error("❌ Font creation failed:", error);
     return false;
   }
 }
@@ -426,82 +433,6 @@ function extractSimilarityScores(summary: string) {
   console.log("From summary:", summary);
 
   return scores;
-}
-
-// Create the missing font data files that PDFKit needs
-function createFontDataFiles() {
-  try {
-    // Create the data directory structure that PDFKit expects
-    const dataDir = path.join(
-      process.cwd(),
-      "node_modules",
-      "pdfkit",
-      "js",
-      "data"
-    );
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-
-    // Create minimal Helvetica.afm file content
-    const helveticaAfm = `StartFontMetrics 2.0
-FontName Helvetica
-FullName Helvetica
-FamilyName Helvetica
-Weight Medium
-ItalicAngle 0
-IsFixedPitch false
-FontBBox -166 -225 1000 931
-UnderlinePosition -100
-UnderlineThickness 50
-Version 1.0
-EncodingScheme AdobeStandardEncoding
-CapHeight 718
-XHeight 523
-Ascender 718
-Descender -207
-StartCharMetrics 315
-C 32 ; WX 278 ; N space ; B 0 0 0 0 ;
-C 33 ; WX 278 ; N exclam ; B 90 0 187 718 ;
-C 65 ; WX 667 ; N A ; B 14 0 654 718 ;
-C 66 ; WX 667 ; N B ; B 74 0 630 718 ;
-C 67 ; WX 722 ; N C ; B 44 -19 681 737 ;
-EndCharMetrics
-EndFontMetrics`;
-
-    // Write Helvetica.afm file
-    const helveticaAfmPath = path.join(dataDir, "Helvetica.afm");
-    if (!fs.existsSync(helveticaAfmPath)) {
-      fs.writeFileSync(helveticaAfmPath, helveticaAfm);
-      console.log("✅ Created Helvetica.afm file");
-    }
-
-    // Write Helvetica-Bold.afm file
-    const helveticaBoldAfmPath = path.join(dataDir, "Helvetica-Bold.afm");
-    if (!fs.existsSync(helveticaBoldAfmPath)) {
-      const boldAfm = helveticaAfm
-        .replace(/FontName Helvetica/g, "FontName Helvetica-Bold")
-        .replace(/FullName Helvetica/g, "FullName Helvetica-Bold");
-      fs.writeFileSync(helveticaBoldAfmPath, boldAfm);
-      console.log("✅ Created Helvetica-Bold.afm file");
-    }
-
-    // Write Times-Roman.afm file
-    const timesAfmPath = path.join(dataDir, "Times-Roman.afm");
-    if (!fs.existsSync(timesAfmPath)) {
-      const timesAfm = helveticaAfm
-        .replace(/FontName Helvetica/g, "FontName Times-Roman")
-        .replace(/FullName Helvetica/g, "FullName Times-Roman")
-        .replace(/FamilyName Helvetica/g, "FamilyName Times");
-      fs.writeFileSync(timesAfmPath, timesAfm);
-      console.log("✅ Created Times-Roman.afm file");
-    }
-
-    return true;
-  } catch (error) {
-    console.warn("⚠️ Could not create font files:", error);
-    return false;
-  }
 }
 
 async function generatePDF(
