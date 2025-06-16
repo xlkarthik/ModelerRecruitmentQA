@@ -300,7 +300,7 @@ function extractSimilarityScores(summary: string) {
 
   return scores;
 }
-A
+A;
 // Helper: generate a 2-page PDF from annotated PNGs + diff
 async function generatePDF(
   annotated: string[],
@@ -312,7 +312,7 @@ async function generatePDF(
     try {
       // Download font from CDN
       const fontUrl = "https://demosetc.b-cdn.net/fonts/Roboto-Regular.ttf";
-      let fontBuffer: Buffer;
+      let fontBuffer: Buffer | null;
 
       try {
         const fontRes = await fetch(fontUrl);
