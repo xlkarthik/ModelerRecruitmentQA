@@ -310,366 +310,174 @@ function extractSimilarityScores(summary: string) {
 
 import { jsPDF } from "jspdf";
 
-// Complete PDFKit solution that avoids default font loading issues
-
-// Complete PDFKit solution that avoids default font loading issues
-
 async function generatePDF(
   annotated: string[],
   diff: any,
   modelStats?: ModelStats,
   tmpDir?: string
 ): Promise<Buffer> {
-  return new Promise(async (resolve, reject) => {
-    try {
-      console.log("Starting PDF generation with external fonts only...");
+  try {
+    console.log("Starting PDF generation with jsPDF...");
 
-      // Download external font FIRST - this is critical
-      let fontBuffer: Buffer | null = null;
+    // Create new PDF document
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
 
-      try {
-        const fontSources = [
-          "https://demosetc.b-cdn.net/fonts/Roboto-Regular.ttf",
-          "https://fonts.gstatic.com/s/opensans/v34/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0B4uaVQUwaEQXjN_mQ.ttf",
-          "https://cdn.jsdelivr.net/npm/@fontsource/inter@4.5.2/files/inter-latin-400-normal.ttf",
-        ];
+    let yPosition = 20;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - margin * 2;
 
-        let fontDownloaded = false;
-        for (const fontUrl of fontSources) {
-          try {
-            console.log(`Downloading font from: ${fontUrl}`);
-            const fontRes = await fetch(fontUrl);
-            if (fontRes.ok) {
-              fontBuffer = Buffer.from(await fontRes.arrayBuffer());
-              console.log(`✅ Font downloaded successfully from: ${fontUrl}`);
-              fontDownloaded = true;
-              break;
-            }
-          } catch (e) {
-            console.warn(`Failed font source: ${fontUrl}`);
-            continue;
-          }
-        }
+    // Header
+    doc.setFontSize(20);
+    doc.text("CharpstAR", margin, yPosition);
+    yPosition += 10;
 
-        if (!fontDownloaded || !fontBuffer) {
-          throw new Error("Failed to download any fonts");
-        }
-      } catch (fontError) {
-        console.error("❌ Font download failed:", fontError);
-        return reject(new Error("Unable to load fonts for PDF generation"));
+    doc.setFontSize(16);
+    doc.text("3D Model QA Report", margin, yPosition);
+    yPosition += 15;
+
+    // Draw line
+    doc.line(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 15;
+
+    // Add images
+    for (let i = 0; i < annotated.length; i++) {
+      // Check if we need a new page
+      if (yPosition > pageHeight - 80) {
+        doc.addPage();
+        yPosition = 20;
       }
 
-      // Download logo
-      let logoBuffer: Buffer | null = null;
       try {
-        const logoRes = await fetch(
-          "https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
+        // Convert file to base64 if it's a file path
+        let base64Image = annotated[i];
+        if (!annotated[i].startsWith("data:")) {
+          const fs = await import("fs");
+          const imageBuffer = fs.readFileSync(annotated[i]);
+          base64Image = `data:image/png;base64,${imageBuffer.toString(
+            "base64"
+          )}`;
+        }
+
+        doc.setFontSize(12);
+        doc.text(`Comparison View ${i + 1}`, margin, yPosition);
+        yPosition += 10;
+
+        // Add image (jsPDF handles base64 images well)
+        const imgWidth = contentWidth;
+        const imgHeight = 60; // Fixed height
+
+        doc.addImage(
+          base64Image,
+          "PNG",
+          margin,
+          yPosition,
+          imgWidth,
+          imgHeight
         );
-        if (logoRes.ok) {
-          logoBuffer = Buffer.from(await logoRes.arrayBuffer());
-          console.log("✅ Logo downloaded");
-        }
-      } catch (logoErr) {
-        console.warn(
-          "⚠️ Logo download failed:",
-          logoErr instanceof Error ? logoErr.message : String(logoErr)
-        );
+        yPosition += imgHeight + 15;
+      } catch (imgError) {
+        console.warn(`Failed to add image ${i}:`, imgError);
+        doc.text(`[Image ${i + 1} failed to load]`, margin, yPosition);
+        yPosition += 15;
       }
+    }
 
-      // Create PDF document with special configuration to avoid default font loading
-      const doc = new PDFDocument({
-        autoFirstPage: false,
-        size: [595.28, 841.89], // A4 in points
-        margins: {
-          top: 50,
-          bottom: 50,
-          left: 50,
-          right: 50,
-        },
-        info: {
-          Title: "3D Model QA Report",
-          Author: "CharpstAR QA Automator",
-        },
-        bufferPages: true,
-        compress: false, // Disable compression to avoid font issues
-      });
+    // Add new page for technical overview
+    doc.addPage();
+    yPosition = 20;
 
-      // Collect PDF data
-      const buffers: Buffer[] = [];
-      doc.on("data", (chunk) => buffers.push(Buffer.from(chunk)));
-      doc.on("end", () => {
-        console.log("✅ PDF generation complete");
-        resolve(Buffer.concat(buffers));
-      });
-      doc.on("error", (err) => {
-        console.error("❌ PDF generation error:", err);
-        reject(err);
-      });
+    // Technical Overview
+    doc.setFontSize(16);
+    doc.text("Technical Overview", margin, yPosition);
+    yPosition += 15;
 
-      // CRITICAL: Register font BEFORE adding any pages or content
-      try {
-        if (!fontBuffer) {
-          throw new Error("No font buffer available");
-        }
-        doc.registerFont("MainFont", fontBuffer);
-        console.log("✅ Font registered successfully");
-      } catch (fontRegError) {
-        const errorMessage =
-          fontRegError instanceof Error
-            ? fontRegError.message
-            : String(fontRegError);
-        console.error("❌ Font registration failed:", errorMessage);
-        return reject(new Error(`Font registration failed: ${errorMessage}`));
-      }
+    if (modelStats) {
+      const requirements = modelStats.requirements;
 
-      // Now add the first page and set font immediately
-      doc.addPage();
+      doc.setFontSize(11);
 
-      try {
-        doc.font("MainFont");
-        console.log("✅ Font set successfully");
-      } catch (fontSetError) {
-        const errorMessage =
-          fontSetError instanceof Error
-            ? fontSetError.message
-            : String(fontSetError);
-        console.error("❌ Font setting failed:", errorMessage);
-        return reject(new Error(`Font setting failed: ${errorMessage}`));
-      }
-
-      // Header - use logo if available, otherwise text
-      if (logoBuffer) {
-        try {
-          doc.image(logoBuffer, 40, 40, { width: 150 });
-          doc
-            .fontSize(14)
-            .text("3D Model QA Report", 50, 85, { continued: false });
-        } catch (imgError) {
-          console.warn(
-            "⚠️ Failed to add logo to PDF:",
-            imgError instanceof Error ? imgError.message : String(imgError)
-          );
-          // Fallback to text only
-          doc.fontSize(16).text("CharpstAR", { continued: false });
-          doc.fontSize(14).text("3D Model QA Report", { continued: false });
-        }
-      } else {
-        // Fallback to text only
-        doc.fontSize(16).text("CharpstAR", { continued: false });
-        doc.fontSize(14).text("3D Model QA Report", { continued: false });
-      }
-
-      // Horizontal rule
-      doc.moveDown(0.5);
-      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
-      doc.moveDown(1);
-
-      // Calculate available content width and height
-      const contentWidth = 495; // 595.28 - 50 - 50 (page width minus margins)
-
-      // Create a combined layout for all image pairs to ensure they're on the same page
-      // If we have multiple images, make them smaller to fit
-      const imageWidth = contentWidth;
-      const imageHeight = annotated.length > 1 ? 280 : 380; // Smaller if multiple images
-      const verticalGap = 10;
-
-      let currentY = doc.y;
-
-      // Process each image
-      for (let i = 0; i < annotated.length; i++) {
-        // Add a new page for each new image after the first, except for the first page
-        if (i > 0) {
-          // Only add a page break when needed
-          if (currentY + imageHeight + 40 > 750) {
-            doc.addPage();
-            currentY = 70; // Reset Y position on new page
-          }
-        }
-
-        // Add image caption
-        doc.fontSize(12).text(`Comparison View ${i + 1}`, { align: "center" });
-        doc.moveDown(0.3);
-        currentY = doc.y;
-
-        // Place image
-        try {
-          doc.image(annotated[i], 50, currentY, {
-            width: imageWidth,
-            height: imageHeight,
-            fit: [imageWidth, imageHeight],
-            align: "center",
-          });
-        } catch (imgError) {
-          console.warn(
-            `⚠️ Failed to add image ${i}:`,
-            imgError instanceof Error ? imgError.message : String(imgError)
-          );
-          // Continue with text placeholder
-          doc.text(`[Image ${i + 1} failed to load]`, 50, currentY);
-        }
-
-        // Move position for next image
-        currentY += imageHeight + verticalGap;
-        doc.y = currentY;
-      }
-
-      // --- MODEL PROPERTIES AND QA SUMMARY ALWAYS ON A NEW PAGE ---
-
-      // Always start a new page for the analysis section
-      doc.addPage();
-
-      // 3D Model Properties section
-      doc.fontSize(14).text("Technical Overview", { align: "left" });
-      doc.moveDown(1.5);
-
-      // Store the starting Y position
-      const originalY = doc.y;
-
-      // Model properties with icons for compliance
-      doc.fontSize(11);
-
-      // Function to add a property line with check/x mark
       const addPropertyLine = (
         property: string,
-        value: string | number,
-        limit?: number | null,
-        unit: string = ""
+        value: any,
+        limit?: number,
+        unit = ""
       ) => {
-        // Format number with commas for thousands
-        const formatNumber = (num: number): string => {
-          return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        };
-
         const valueStr =
-          (typeof value === "number" ? formatNumber(value) : value) + unit;
-        const checkValue =
-          typeof value === "number" ? value : parseFloat(String(value));
+          typeof value === "number" ? value.toLocaleString() : value;
+        const isCompliant = !limit || value <= limit;
+        const status = isCompliant ? "✓" : "✗";
 
-        // Start horizontal positioning
-        const startY = doc.y;
+        const line = `${status} ${property}: ${valueStr}${unit}`;
+        doc.text(line, margin, yPosition);
 
-        // Draw colored circle icon based on compliance
-        if (limit !== undefined) {
-          const isCompliant = limit === null || checkValue <= limit;
-          const circleColor = isCompliant ? "#34a853" : "#ea4335"; // Green or Red
-
-          doc
-            .circle(65, startY + 6, 5)
-            .fillColor(circleColor)
-            .fill();
-        } else {
-          // Gray circle for properties with no limit
-          doc
-            .circle(65, startY + 6, 5)
-            .fillColor("#9aa0a6")
-            .fill();
+        if (limit) {
+          const limitText = `(limit: ${limit.toLocaleString()}${unit})`;
+          doc.text(limitText, margin + 120, yPosition);
         }
-
-        // Reset fill color for text
-        doc.fillColor("#000000");
-
-        // Property name (left aligned)
-        doc.text(property, 80, startY, { continued: false, width: 160 });
-
-        // Value (center-right aligned)
-        doc.text(valueStr, 240, startY, {
-          continued: false,
-          width: 80,
-          align: "right",
-        });
-
-        // Limit text (right aligned)
-        if (limit !== undefined) {
-          doc
-            .fillColor("#5f6368")
-            .fontSize(10)
-            .text(
-              limit === null
-                ? ""
-                : `(limit: ${limit ? formatNumber(limit) : limit}${unit})`,
-              330,
-              startY,
-              { width: contentWidth - 280, align: "right" }
-            )
-            .fillColor("#000000")
-            .fontSize(11);
-        }
-
-        doc.moveDown(1.5);
+        yPosition += 8;
       };
 
-      // Add model properties with their limits
-      if (modelStats) {
-        const requirements = modelStats.requirements;
+      addPropertyLine(
+        "Polycount",
+        modelStats.triangles,
+        requirements?.maxTriangles
+      );
+      addPropertyLine("Mesh Count", modelStats.meshCount, 5);
+      addPropertyLine(
+        "Material Count",
+        modelStats.materialCount,
+        requirements?.maxMaterials
+      );
+      addPropertyLine("Double-sided Materials", modelStats.doubleSidedCount, 0);
 
-        addPropertyLine(
-          "Polycount",
-          modelStats.triangles,
-          requirements?.maxTriangles
-        );
-        addPropertyLine("Mesh Count", modelStats.meshCount, 5);
-        addPropertyLine(
-          "Material Count",
-          modelStats.materialCount,
-          requirements?.maxMaterials
-        );
-        addPropertyLine(
-          "Double-sided Materials",
-          modelStats.doubleSidedCount,
-          0
-        );
-        addPropertyLine(
-          "File Size",
-          parseFloat((modelStats.fileSize / (1024 * 1024)).toFixed(2)),
-          requirements?.maxFileSize
-            ? requirements.maxFileSize / (1024 * 1024)
-            : 15,
-          "MB"
-        );
-      } else {
-        // Use placeholder values if no stats provided
-        const properties = [
-          "• Polycount: 150,000",
-          "• Material Count: 5",
-          "• File Size: 5.2MB",
-        ];
-
-        properties.forEach((prop) => {
-          doc.text(prop);
-          doc.moveDown(1.5);
-        });
-      }
-
-      // Add a horizontal line across the full page width
-      const lineY = doc.y + 15;
-      doc.moveTo(50, lineY).lineTo(545, lineY).stroke();
-
-      // Reset position to continue after the horizontal line
-      doc.x = 50;
-      doc.y = lineY + 20;
-
-      // QA Summary section
-      doc.fontSize(14).text("QA Summary");
-      doc.moveDown(0.5);
-
-      // Summary text
-      doc.fontSize(11).text(diff.summary || "No issues found.");
-      doc.moveDown(1);
-
-      doc.fontSize(12).text("Status:");
-      doc.moveDown(0.5);
-
-      doc.fontSize(11);
-      doc.text(diff.status);
-
-      // Finalize PDF
-      doc.end();
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error("❌ PDF generation failed:", errorMessage);
-      reject(err);
+      const fileSizeMB = parseFloat(
+        (modelStats.fileSize / (1024 * 1024)).toFixed(2)
+      );
+      const maxSizeMB = requirements?.maxFileSize
+        ? requirements.maxFileSize / (1024 * 1024)
+        : 15;
+      addPropertyLine("File Size", fileSizeMB, maxSizeMB, "MB");
     }
-  });
+
+    yPosition += 10;
+
+    // Add horizontal line
+    doc.line(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 10;
+
+    // QA Summary
+    doc.setFontSize(16);
+    doc.text("QA Summary", margin, yPosition);
+    yPosition += 15;
+
+    doc.setFontSize(11);
+    const summaryLines = doc.splitTextToSize(
+      diff.summary || "No issues found.",
+      contentWidth
+    );
+    doc.text(summaryLines, margin, yPosition);
+    yPosition += summaryLines.length * 6 + 10;
+
+    doc.setFontSize(12);
+    doc.text("Status:", margin, yPosition);
+    yPosition += 8;
+
+    doc.setFontSize(11);
+    doc.text(diff.status, margin, yPosition);
+
+    // Convert to buffer
+    const pdfBlob = doc.output("arraybuffer");
+    return Buffer.from(pdfBlob);
+  } catch (error) {
+    console.error("jsPDF generation failed:", error);
+    throw error;
+  }
 }
 async function downloadImages(
   urls: string[],
