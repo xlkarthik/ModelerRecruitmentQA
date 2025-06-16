@@ -8,6 +8,133 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { supabase } from "../../../lib/supabase";
 
+function createFontDataFiles() {
+  try {
+    // The exact path from your error message
+    const bundledDataDir = path.join(process.cwd(), '.next', 'server', 'vendor-chunks', 'data');
+    
+    // Also try other possible locations
+    const possiblePaths = [
+      bundledDataDir, // Primary target from error
+      path.join(process.cwd(), 'node_modules', 'pdfkit', 'js', 'data'), // Standard location
+      path.join(process.cwd(), '.next', 'server', 'chunks', 'data'), // Alternative bundled location
+    ];
+
+    // Create minimal Helvetica.afm file content
+    const helveticaAfm = `StartFontMetrics 2.0
+FontName Helvetica
+FullName Helvetica
+FamilyName Helvetica
+Weight Medium
+ItalicAngle 0
+IsFixedPitch false
+FontBBox -166 -225 1000 931
+UnderlinePosition -100
+UnderlineThickness 50
+Version 1.0
+EncodingScheme AdobeStandardEncoding
+CapHeight 718
+XHeight 523
+Ascender 718
+Descender -207
+StartCharMetrics 315
+C 32 ; WX 278 ; N space ; B 0 0 0 0 ;
+C 33 ; WX 278 ; N exclam ; B 90 0 187 718 ;
+C 65 ; WX 667 ; N A ; B 14 0 654 718 ;
+C 66 ; WX 667 ; N B ; B 74 0 630 718 ;
+C 67 ; WX 722 ; N C ; B 44 -19 681 737 ;
+C 68 ; WX 722 ; N D ; B 76 0 685 718 ;
+C 69 ; WX 667 ; N E ; B 76 0 621 718 ;
+C 70 ; WX 611 ; N F ; B 76 0 587 718 ;
+C 71 ; WX 778 ; N G ; B 44 -19 713 737 ;
+C 72 ; WX 722 ; N H ; B 76 0 646 718 ;
+C 73 ; WX 278 ; N I ; B 76 0 202 718 ;
+C 74 ; WX 500 ; N J ; B 28 -19 424 718 ;
+C 75 ; WX 667 ; N K ; B 76 0 663 718 ;
+C 76 ; WX 556 ; N L ; B 76 0 537 718 ;
+C 77 ; WX 833 ; N M ; B 76 0 757 718 ;
+C 78 ; WX 722 ; N N ; B 76 0 646 718 ;
+C 79 ; WX 778 ; N O ; B 44 -19 734 737 ;
+C 80 ; WX 667 ; N P ; B 76 0 627 718 ;
+EndCharMetrics
+EndFontMetrics`;
+
+    let createdAny = false;
+
+    // Try each possible location
+    for (const dataDir of possiblePaths) {
+      try {
+        console.log(`Attempting to create font files in: ${dataDir}`);
+        
+        // Create directory if it doesn't exist
+        if (!fs.existsSync(dataDir)) {
+          fs.mkdirSync(dataDir, { recursive: true });
+          console.log(`✅ Created directory: ${dataDir}`);
+        }
+
+        // Create Helvetica.afm
+        const helveticaPath = path.join(dataDir, 'Helvetica.afm');
+        if (!fs.existsSync(helveticaPath)) {
+          fs.writeFileSync(helveticaPath, helveticaAfm);
+          console.log(`✅ Created Helvetica.afm at: ${helveticaPath}`);
+          createdAny = true;
+        }
+
+        // Create Helvetica-Bold.afm
+        const boldPath = path.join(dataDir, 'Helvetica-Bold.afm');
+        if (!fs.existsSync(boldPath)) {
+          const boldAfm = helveticaAfm
+            .replace(/FontName Helvetica/g, 'FontName Helvetica-Bold')
+            .replace(/FullName Helvetica/g, 'FullName Helvetica-Bold');
+          fs.writeFileSync(boldPath, boldAfm);
+          console.log(`✅ Created Helvetica-Bold.afm at: ${boldPath}`);
+          createdAny = true;
+        }
+
+        // Create Times-Roman.afm
+        const timesPath = path.join(dataDir, 'Times-Roman.afm');
+        if (!fs.existsSync(timesPath)) {
+          const timesAfm = helveticaAfm
+            .replace(/FontName Helvetica/g, 'FontName Times-Roman')
+            .replace(/FullName Helvetica/g, 'FullName Times-Roman')
+            .replace(/FamilyName Helvetica/g, 'FamilyName Times');
+          fs.writeFileSync(timesPath, timesAfm);
+          console.log(`✅ Created Times-Roman.afm at: ${timesPath}`);
+          createdAny = true;
+        }
+
+        // Create Courier.afm (another common fallback)
+        const courierPath = path.join(dataDir, 'Courier.afm');
+        if (!fs.existsSync(courierPath)) {
+          const courierAfm = helveticaAfm
+            .replace(/FontName Helvetica/g, 'FontName Courier')
+            .replace(/FullName Helvetica/g, 'FullName Courier')
+            .replace(/FamilyName Helvetica/g, 'FamilyName Courier')
+            .replace(/IsFixedPitch false/g, 'IsFixedPitch true');
+          fs.writeFileSync(courierPath, courierAfm);
+          console.log(`✅ Created Courier.afm at: ${courierPath}`);
+          createdAny = true;
+        }
+
+      } catch (dirError) {
+        console.warn(`⚠️ Failed to create fonts in ${dataDir}:`, dirError.message);
+        continue;
+      }
+    }
+
+    if (createdAny) {
+      console.log('✅ Font files created successfully');
+      return true;
+    } else {
+      console.warn('⚠️ No font files were created');
+      return false;
+    }
+
+  } catch (error) {
+    console.error('❌ Font creation failed:', error);
+    return false;
+  }
+}
 // Job Queue Implementation
 class QAJobQueue {
   private static instance: QAJobQueue;
