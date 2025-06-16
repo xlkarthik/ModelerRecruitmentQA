@@ -261,7 +261,7 @@ function extractSimilarityScores(summary: string) {
   
   return scores;
 };
-}
+
 
 // Helper: generate a 2-page PDF from annotated PNGs + diff
 async function generatePDF(
