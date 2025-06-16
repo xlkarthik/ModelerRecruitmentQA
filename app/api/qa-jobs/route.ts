@@ -8,35 +8,6 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { supabase } from "../../../lib/supabase";
 
-function patchPDFKit() {
-  // Override the StandardFont constructor to prevent file system access
-  const originalStandardFont = (PDFDocument as any).StandardFont;
-  if (originalStandardFont) {
-    (PDFDocument as any).StandardFont = class PatchedStandardFont {
-      constructor(name: string) {
-        // Don't call super() to avoid file system access
-        this.name = name;
-        this.ascender = 800;
-        this.descender = -200;
-        this.bbox = [0, 0, 1000, 1000];
-        this.lineGap = 0;
-      }
-    };
-  }
-
-  // Override font loading methods
-  const originalPDFDocument = PDFDocument;
-  const originalInitFonts = originalPDFDocument.prototype.initFonts;
-
-  originalPDFDocument.prototype.initFonts = function () {
-    // Skip default font initialization
-    this._fontFamilies = {};
-    this._fontCount = 0;
-    this._fontSize = 12;
-    this._font = null;
-  };
-}
-
 // Job Queue Implementation
 class QAJobQueue {
   private static instance: QAJobQueue;
@@ -349,20 +320,38 @@ async function generatePDF(
 ): Promise<Buffer> {
   return new Promise(async (resolve, reject) => {
     try {
-      console.log("Starting PDF generation...");
+      console.log("Starting PDF generation with external fonts only...");
 
-      // Download external font
+      // Download external font FIRST - this is critical
       let fontBuffer: Buffer | null = null;
 
       try {
-        const fontUrl = "https://demosetc.b-cdn.net/fonts/Roboto-Regular.ttf";
-        console.log(`Downloading font from: ${fontUrl}`);
-        const fontRes = await fetch(fontUrl);
-        if (!fontRes.ok) {
-          throw new Error(`Font fetch failed: ${fontRes.status}`);
+        const fontSources = [
+          "https://demosetc.b-cdn.net/fonts/Roboto-Regular.ttf",
+          "https://fonts.gstatic.com/s/opensans/v34/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0B4uaVQUwaEQXjN_mQ.ttf",
+          "https://cdn.jsdelivr.net/npm/@fontsource/inter@4.5.2/files/inter-latin-400-normal.ttf",
+        ];
+
+        let fontDownloaded = false;
+        for (const fontUrl of fontSources) {
+          try {
+            console.log(`Downloading font from: ${fontUrl}`);
+            const fontRes = await fetch(fontUrl);
+            if (fontRes.ok) {
+              fontBuffer = Buffer.from(await fontRes.arrayBuffer());
+              console.log(`✅ Font downloaded successfully from: ${fontUrl}`);
+              fontDownloaded = true;
+              break;
+            }
+          } catch (e) {
+            console.warn(`Failed font source: ${fontUrl}`);
+            continue;
+          }
         }
-        fontBuffer = Buffer.from(await fontRes.arrayBuffer());
-        console.log(`✅ Font downloaded successfully`);
+
+        if (!fontDownloaded || !fontBuffer) {
+          throw new Error("Failed to download any fonts");
+        }
       } catch (fontError) {
         console.error("❌ Font download failed:", fontError);
         return reject(new Error("Unable to load fonts for PDF generation"));
@@ -379,27 +368,31 @@ async function generatePDF(
           console.log("✅ Logo downloaded");
         }
       } catch (logoErr) {
-        console.warn("⚠️ Logo download failed");
+        console.warn(
+          "⚠️ Logo download failed:",
+          logoErr instanceof Error ? logoErr.message : String(logoErr)
+        );
       }
 
-      // CRITICAL: Create document WITHOUT triggering font initialization
+      // Create PDF document with special configuration to avoid default font loading
       const doc = new PDFDocument({
         autoFirstPage: false,
-        size: [595.28, 841.89],
-        margins: { top: 50, bottom: 50, left: 50, right: 50 },
+        size: [595.28, 841.89], // A4 in points
+        margins: {
+          top: 50,
+          bottom: 50,
+          left: 50,
+          right: 50,
+        },
         info: {
           Title: "3D Model QA Report",
           Author: "CharpstAR QA Automator",
         },
-        // This prevents default font loading
         bufferPages: true,
-        font: undefined, // Don't set any default font
+        compress: false, // Disable compression to avoid font issues
       });
 
-      // Override the default font loading behavior
-      (doc as any)._fontFamilies = {};
-      (doc as any)._fontCount = 0;
-
+      // Collect PDF data
       const buffers: Buffer[] = [];
       doc.on("data", (chunk) => buffers.push(Buffer.from(chunk)));
       doc.on("end", () => {
@@ -411,24 +404,38 @@ async function generatePDF(
         reject(err);
       });
 
-      // Register font IMMEDIATELY
-      if (!fontBuffer) {
-        return reject(new Error("No font buffer available"));
+      // CRITICAL: Register font BEFORE adding any pages or content
+      try {
+        if (!fontBuffer) {
+          throw new Error("No font buffer available");
+        }
+        doc.registerFont("MainFont", fontBuffer);
+        console.log("✅ Font registered successfully");
+      } catch (fontRegError) {
+        const errorMessage =
+          fontRegError instanceof Error
+            ? fontRegError.message
+            : String(fontRegError);
+        console.error("❌ Font registration failed:", errorMessage);
+        return reject(new Error(`Font registration failed: ${errorMessage}`));
       }
+
+      // Now add the first page and set font immediately
+      doc.addPage();
 
       try {
-        doc.registerFont("MainFont", fontBuffer);
-        console.log("✅ Font registered");
-      } catch (fontRegError) {
-        console.error("❌ Font registration failed:", fontRegError);
-        return reject(new Error(`Font registration failed`));
+        doc.font("MainFont");
+        console.log("✅ Font set successfully");
+      } catch (fontSetError) {
+        const errorMessage =
+          fontSetError instanceof Error
+            ? fontSetError.message
+            : String(fontSetError);
+        console.error("❌ Font setting failed:", errorMessage);
+        return reject(new Error(`Font setting failed: ${errorMessage}`));
       }
 
-      // Add page and set font
-      doc.addPage();
-      doc.font("MainFont");
-
-      // Header
+      // Header - use logo if available, otherwise text
       if (logoBuffer) {
         try {
           doc.image(logoBuffer, 40, 40, { width: 150 });
@@ -436,10 +443,16 @@ async function generatePDF(
             .fontSize(14)
             .text("3D Model QA Report", 50, 85, { continued: false });
         } catch (imgError) {
+          console.warn(
+            "⚠️ Failed to add logo to PDF:",
+            imgError instanceof Error ? imgError.message : String(imgError)
+          );
+          // Fallback to text only
           doc.fontSize(16).text("CharpstAR", { continued: false });
           doc.fontSize(14).text("3D Model QA Report", { continued: false });
         }
       } else {
+        // Fallback to text only
         doc.fontSize(16).text("CharpstAR", { continued: false });
         doc.fontSize(14).text("3D Model QA Report", { continued: false });
       }
@@ -449,25 +462,34 @@ async function generatePDF(
       doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
       doc.moveDown(1);
 
-      const contentWidth = 495;
+      // Calculate available content width and height
+      const contentWidth = 495; // 595.28 - 50 - 50 (page width minus margins)
+
+      // Create a combined layout for all image pairs to ensure they're on the same page
+      // If we have multiple images, make them smaller to fit
       const imageWidth = contentWidth;
-      const imageHeight = annotated.length > 1 ? 280 : 380;
+      const imageHeight = annotated.length > 1 ? 280 : 380; // Smaller if multiple images
       const verticalGap = 10;
+
       let currentY = doc.y;
 
-      // Process images
+      // Process each image
       for (let i = 0; i < annotated.length; i++) {
+        // Add a new page for each new image after the first, except for the first page
         if (i > 0) {
+          // Only add a page break when needed
           if (currentY + imageHeight + 40 > 750) {
             doc.addPage();
-            currentY = 70;
+            currentY = 70; // Reset Y position on new page
           }
         }
 
+        // Add image caption
         doc.fontSize(12).text(`Comparison View ${i + 1}`, { align: "center" });
         doc.moveDown(0.3);
         currentY = doc.y;
 
+        // Place image
         try {
           doc.image(annotated[i], 50, currentY, {
             width: imageWidth,
@@ -476,25 +498,42 @@ async function generatePDF(
             align: "center",
           });
         } catch (imgError) {
+          console.warn(
+            `⚠️ Failed to add image ${i}:`,
+            imgError instanceof Error ? imgError.message : String(imgError)
+          );
+          // Continue with text placeholder
           doc.text(`[Image ${i + 1} failed to load]`, 50, currentY);
         }
 
+        // Move position for next image
         currentY += imageHeight + verticalGap;
         doc.y = currentY;
       }
 
-      // New page for technical overview
+      // --- MODEL PROPERTIES AND QA SUMMARY ALWAYS ON A NEW PAGE ---
+
+      // Always start a new page for the analysis section
       doc.addPage();
+
+      // 3D Model Properties section
       doc.fontSize(14).text("Technical Overview", { align: "left" });
       doc.moveDown(1.5);
+
+      // Store the starting Y position
+      const originalY = doc.y;
+
+      // Model properties with icons for compliance
       doc.fontSize(11);
 
+      // Function to add a property line with check/x mark
       const addPropertyLine = (
         property: string,
         value: string | number,
         limit?: number | null,
         unit: string = ""
       ) => {
+        // Format number with commas for thousands
         const formatNumber = (num: number): string => {
           return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         };
@@ -503,30 +542,41 @@ async function generatePDF(
           (typeof value === "number" ? formatNumber(value) : value) + unit;
         const checkValue =
           typeof value === "number" ? value : parseFloat(String(value));
+
+        // Start horizontal positioning
         const startY = doc.y;
 
+        // Draw colored circle icon based on compliance
         if (limit !== undefined) {
           const isCompliant = limit === null || checkValue <= limit;
-          const circleColor = isCompliant ? "#34a853" : "#ea4335";
+          const circleColor = isCompliant ? "#34a853" : "#ea4335"; // Green or Red
+
           doc
             .circle(65, startY + 6, 5)
             .fillColor(circleColor)
             .fill();
         } else {
+          // Gray circle for properties with no limit
           doc
             .circle(65, startY + 6, 5)
             .fillColor("#9aa0a6")
             .fill();
         }
 
+        // Reset fill color for text
         doc.fillColor("#000000");
+
+        // Property name (left aligned)
         doc.text(property, 80, startY, { continued: false, width: 160 });
+
+        // Value (center-right aligned)
         doc.text(valueStr, 240, startY, {
           continued: false,
           width: 80,
           align: "right",
         });
 
+        // Limit text (right aligned)
         if (limit !== undefined) {
           doc
             .fillColor("#5f6368")
@@ -546,8 +596,10 @@ async function generatePDF(
         doc.moveDown(1.5);
       };
 
+      // Add model properties with their limits
       if (modelStats) {
         const requirements = modelStats.requirements;
+
         addPropertyLine(
           "Polycount",
           modelStats.triangles,
@@ -573,34 +625,46 @@ async function generatePDF(
           "MB"
         );
       } else {
+        // Use placeholder values if no stats provided
         const properties = [
           "• Polycount: 150,000",
           "• Material Count: 5",
           "• File Size: 5.2MB",
         ];
+
         properties.forEach((prop) => {
           doc.text(prop);
           doc.moveDown(1.5);
         });
       }
 
+      // Add a horizontal line across the full page width
       const lineY = doc.y + 15;
       doc.moveTo(50, lineY).lineTo(545, lineY).stroke();
+
+      // Reset position to continue after the horizontal line
       doc.x = 50;
       doc.y = lineY + 20;
 
+      // QA Summary section
       doc.fontSize(14).text("QA Summary");
       doc.moveDown(0.5);
+
+      // Summary text
       doc.fontSize(11).text(diff.summary || "No issues found.");
       doc.moveDown(1);
+
       doc.fontSize(12).text("Status:");
       doc.moveDown(0.5);
+
       doc.fontSize(11);
       doc.text(diff.status);
 
+      // Finalize PDF
       doc.end();
     } catch (err) {
-      console.error("❌ PDF generation failed:", err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error("❌ PDF generation failed:", errorMessage);
       reject(err);
     }
   });
