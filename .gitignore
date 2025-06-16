@@ -7,6 +7,5 @@ node_modules/
 *.log
 .DS_Store
 /tmp/
-fonts/
 .vercelgit add .
 
