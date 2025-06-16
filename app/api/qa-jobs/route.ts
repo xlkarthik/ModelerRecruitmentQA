@@ -481,7 +481,6 @@ async function generatePDF(
         const requirements = modelStats.requirements;
         
         addPropertyLine("Polycount", modelStats.triangles, requirements?.maxTriangles);
-        addPropertyLine("Vertices", modelStats.vertices, 150000);
         addPropertyLine("Mesh Count", modelStats.meshCount, 5);
         addPropertyLine("Material Count", modelStats.materialCount, requirements?.maxMaterials);
         addPropertyLine(
