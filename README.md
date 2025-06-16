@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 3D QA Comparator
 
 **3D QA Comparator** automates visual quality assurance for 3D renders by comparing them against real-world reference images. It produces side-by-side annotated output highlighting discrepancies (materials, proportions, textures) and generates actionable improvement suggestions.
@@ -132,3 +133,7 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
 
 > > > > > > > e45b2a0 (Initial commit)
+=======
+# ModelerRecruitmentQA
+3D QA Comparator automates visual QA for 3D Models: upload or link your 3D model, then get a side-by-side annotated comparison highlighting discrepancies (materials, proportions, textures) plus actionable suggestions. Built with Next.js, OpenAI Vision, and a Python/Pillow annotation pipeline.
+>>>>>>> 01c7e3da0352bf6eb81c59070969371edb7de9e8
