@@ -8,6 +8,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { supabase } from "../../../lib/supabase";
 
+// Replace your createFontDataFiles function with this exact fix
+
 function createFontDataFiles() {
   try {
     // The EXACT path from your error message
