@@ -308,7 +308,6 @@ function extractSimilarityScores(summary: string) {
 // COMPLETE SOLUTION: Replace PDFKit with jsPDF
 // First install: npm install jspdf html2canvas
 
-import { jsPDF } from "jspdf";
 
 // Complete PDFKit solution that avoids default font loading issues
 
