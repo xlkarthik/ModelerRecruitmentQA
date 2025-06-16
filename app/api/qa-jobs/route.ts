@@ -341,40 +341,6 @@ function extractSimilarityScores(summary: string) {
 
 // Complete PDFKit solution that avoids default font loading issues
 
-// Working PDFKit solution - patches font loading to work in bundled environments
-
-import PDFDocument from "pdfkit";
-
-// Patch PDFKit to prevent default font loading
-function patchPDFKit() {
-  // Override the StandardFont constructor to prevent file system access
-  const originalStandardFont = (PDFDocument as any).StandardFont;
-  if (originalStandardFont) {
-    (PDFDocument as any).StandardFont = class PatchedStandardFont {
-      constructor(name: string) {
-        // Don't call super() to avoid file system access
-        this.name = name;
-        this.ascender = 800;
-        this.descender = -200;
-        this.bbox = [0, 0, 1000, 1000];
-        this.lineGap = 0;
-      }
-    };
-  }
-
-  // Override font loading methods
-  const originalPDFDocument = PDFDocument;
-  const originalInitFonts = originalPDFDocument.prototype.initFonts;
-  
-  originalPDFDocument.prototype.initFonts = function() {
-    // Skip default font initialization
-    this._fontFamilies = {};
-    this._fontCount = 0;
-    this._fontSize = 12;
-    this._font = null;
-  };
-}
-
 async function generatePDF(
   annotated: string[],
   diff: any,
@@ -383,14 +349,11 @@ async function generatePDF(
 ): Promise<Buffer> {
   return new Promise(async (resolve, reject) => {
     try {
-      console.log("Starting PDF generation with patched PDFKit...");
-      
-      // Apply the patch before creating any PDFDocument
-      patchPDFKit();
+      console.log("Starting PDF generation...");
 
       // Download external font
       let fontBuffer: Buffer | null = null;
-      
+
       try {
         const fontUrl = "https://demosetc.b-cdn.net/fonts/Roboto-Regular.ttf";
         console.log(`Downloading font from: ${fontUrl}`);
@@ -419,7 +382,7 @@ async function generatePDF(
         console.warn("⚠️ Logo download failed");
       }
 
-      // Create PDF document - should not trigger font loading now
+      // CRITICAL: Create document WITHOUT triggering font initialization
       const doc = new PDFDocument({
         autoFirstPage: false,
         size: [595.28, 841.89],
@@ -428,8 +391,14 @@ async function generatePDF(
           Title: "3D Model QA Report",
           Author: "CharpstAR QA Automator",
         },
+        // This prevents default font loading
         bufferPages: true,
+        font: undefined, // Don't set any default font
       });
+
+      // Override the default font loading behavior
+      (doc as any)._fontFamilies = {};
+      (doc as any)._fontCount = 0;
 
       const buffers: Buffer[] = [];
       doc.on("data", (chunk) => buffers.push(Buffer.from(chunk)));
@@ -442,11 +411,11 @@ async function generatePDF(
         reject(err);
       });
 
-      // Register font IMMEDIATELY after document creation
+      // Register font IMMEDIATELY
       if (!fontBuffer) {
         return reject(new Error("No font buffer available"));
       }
-      
+
       try {
         doc.registerFont("MainFont", fontBuffer);
         console.log("✅ Font registered");
@@ -463,7 +432,9 @@ async function generatePDF(
       if (logoBuffer) {
         try {
           doc.image(logoBuffer, 40, 40, { width: 150 });
-          doc.fontSize(14).text("3D Model QA Report", 50, 85, { continued: false });
+          doc
+            .fontSize(14)
+            .text("3D Model QA Report", 50, 85, { continued: false });
         } catch (imgError) {
           doc.fontSize(16).text("CharpstAR", { continued: false });
           doc.fontSize(14).text("3D Model QA Report", { continued: false });
@@ -528,28 +499,42 @@ async function generatePDF(
           return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         };
 
-        const valueStr = (typeof value === "number" ? formatNumber(value) : value) + unit;
-        const checkValue = typeof value === "number" ? value : parseFloat(String(value));
+        const valueStr =
+          (typeof value === "number" ? formatNumber(value) : value) + unit;
+        const checkValue =
+          typeof value === "number" ? value : parseFloat(String(value));
         const startY = doc.y;
 
         if (limit !== undefined) {
           const isCompliant = limit === null || checkValue <= limit;
           const circleColor = isCompliant ? "#34a853" : "#ea4335";
-          doc.circle(65, startY + 6, 5).fillColor(circleColor).fill();
+          doc
+            .circle(65, startY + 6, 5)
+            .fillColor(circleColor)
+            .fill();
         } else {
-          doc.circle(65, startY + 6, 5).fillColor("#9aa0a6").fill();
+          doc
+            .circle(65, startY + 6, 5)
+            .fillColor("#9aa0a6")
+            .fill();
         }
 
         doc.fillColor("#000000");
         doc.text(property, 80, startY, { continued: false, width: 160 });
-        doc.text(valueStr, 240, startY, { continued: false, width: 80, align: "right" });
+        doc.text(valueStr, 240, startY, {
+          continued: false,
+          width: 80,
+          align: "right",
+        });
 
         if (limit !== undefined) {
           doc
             .fillColor("#5f6368")
             .fontSize(10)
             .text(
-              limit === null ? "" : `(limit: ${limit ? formatNumber(limit) : limit}${unit})`,
+              limit === null
+                ? ""
+                : `(limit: ${limit ? formatNumber(limit) : limit}${unit})`,
               330,
               startY,
               { width: contentWidth - 280, align: "right" }
@@ -563,18 +548,36 @@ async function generatePDF(
 
       if (modelStats) {
         const requirements = modelStats.requirements;
-        addPropertyLine("Polycount", modelStats.triangles, requirements?.maxTriangles);
+        addPropertyLine(
+          "Polycount",
+          modelStats.triangles,
+          requirements?.maxTriangles
+        );
         addPropertyLine("Mesh Count", modelStats.meshCount, 5);
-        addPropertyLine("Material Count", modelStats.materialCount, requirements?.maxMaterials);
-        addPropertyLine("Double-sided Materials", modelStats.doubleSidedCount, 0);
+        addPropertyLine(
+          "Material Count",
+          modelStats.materialCount,
+          requirements?.maxMaterials
+        );
+        addPropertyLine(
+          "Double-sided Materials",
+          modelStats.doubleSidedCount,
+          0
+        );
         addPropertyLine(
           "File Size",
           parseFloat((modelStats.fileSize / (1024 * 1024)).toFixed(2)),
-          requirements?.maxFileSize ? requirements.maxFileSize / (1024 * 1024) : 15,
+          requirements?.maxFileSize
+            ? requirements.maxFileSize / (1024 * 1024)
+            : 15,
           "MB"
         );
       } else {
-        const properties = ["• Polycount: 150,000", "• Material Count: 5", "• File Size: 5.2MB"];
+        const properties = [
+          "• Polycount: 150,000",
+          "• Material Count: 5",
+          "• File Size: 5.2MB",
+        ];
         properties.forEach((prop) => {
           doc.text(prop);
           doc.moveDown(1.5);
@@ -596,7 +599,6 @@ async function generatePDF(
       doc.text(diff.status);
 
       doc.end();
-      
     } catch (err) {
       console.error("❌ PDF generation failed:", err);
       reject(err);
