@@ -300,6 +300,7 @@ function extractSimilarityScores(summary: string) {
 
   return scores;
 }
+
 // Helper: generate a 2-page PDF from annotated PNGs + diff
 async function generatePDF(
   annotated: string[],
@@ -309,25 +310,12 @@ async function generatePDF(
 ): Promise<Buffer> {
   return new Promise(async (resolve, reject) => {
     try {
-      // Download font from CDN
-      const fontUrl = "https://demosetc.b-cdn.net/fonts/Roboto-Regular.ttf";
-let fontBuffer: Buffer | null = null;
-
-      try {
-        const fontRes = await fetch(fontUrl);
-        if (!fontRes.ok) {
-          throw new Error(`Failed to fetch font: ${fontRes.status}`);
-        }
-        fontBuffer = Buffer.from(await fontRes.arrayBuffer());
-        console.log("✅ Font downloaded from CDN");
-      } catch (fontError) {
-        console.error("❌ Failed to download font from CDN:", fontError);
-        // Fallback to default system font
-        fontBuffer = null;
-      }
+      // Get path to Roboto font
+      const ttf = path.join(process.cwd(), "fonts", "Roboto-Regular.ttf");
 
       // Prepare for logo
-      let logoBuffer: Buffer | null = null;
+      const logoPath = path.join(tmpDir || process.cwd(), "logo.png");
+      let hasLogo = false;
 
       // Try to download the logo
       try {
@@ -335,11 +323,12 @@ let fontBuffer: Buffer | null = null;
           "https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
         );
         if (logoRes.ok) {
-          logoBuffer = Buffer.from(await logoRes.arrayBuffer());
-          console.log("✅ Logo downloaded");
+          const logoBuffer = Buffer.from(await logoRes.arrayBuffer());
+          fs.writeFileSync(logoPath, logoBuffer);
+          hasLogo = true;
         }
       } catch (logoErr) {
-        console.error("❌ Failed to download logo:", logoErr);
+        console.error("Failed to download logo:", logoErr);
       }
 
       // Create PDF document with standard A4 size and minimal margins
@@ -352,6 +341,7 @@ let fontBuffer: Buffer | null = null;
           left: 50,
           right: 50,
         },
+        font: ttf,
         info: {
           Title: "3D Model QA Report",
           Author: "CharpstAR QA Automator",
@@ -364,11 +354,8 @@ let fontBuffer: Buffer | null = null;
       doc.on("end", () => resolve(Buffer.concat(buffers)));
       doc.on("error", (err) => reject(err));
 
-      // Register font if available
-      if (fontBuffer) {
-        doc.registerFont("MainFont", fontBuffer);
-        doc.font("MainFont");
-      }
+      // Register our font
+      doc.registerFont("MainFont", ttf);
 
       // Add first page
       doc.addPage();
@@ -376,14 +363,17 @@ let fontBuffer: Buffer | null = null;
       // --- PAGE 1: HEADER AND IMAGES ---
 
       // Header - use logo if available, otherwise text
-      if (logoBuffer) {
-        doc.image(logoBuffer, 40, 40, { width: 150 });
+      if (hasLogo) {
+        doc.image(logoPath, 40, 40, { width: 150 });
         doc
           .fontSize(14)
           .text("3D Model QA Report", 50, 85, { continued: false });
       } else {
-        // Fallback to text only
-        doc.fontSize(16).text("CharpstAR", { continued: false });
+        // Fallback to original behavior
+        doc
+          .font("MainFont")
+          .fontSize(16)
+          .text("CharpstAR", { continued: false });
         doc.fontSize(14).text("3D Model QA Report", { continued: false });
       }
 
@@ -528,9 +518,10 @@ let fontBuffer: Buffer | null = null;
       if (modelStats) {
         const requirements = modelStats.requirements;
 
+        addPropertyLine("Polycount", modelStats.triangles, 150000);
         addPropertyLine(
-          "Polycount",
-          modelStats.triangles,
+          "Triangles",
+          modelStats.vertices,
           requirements?.maxTriangles
         );
         addPropertyLine("Mesh Count", modelStats.meshCount, 5);
