@@ -312,7 +312,6 @@ import { jsPDF } from "jspdf";
 
 // Complete PDFKit solution that avoids default font loading issues
 
-import PDFDocument from "pdfkit";
 
 async function generatePDF(
   annotated: string[],
