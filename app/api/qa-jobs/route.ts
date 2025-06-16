@@ -314,9 +314,6 @@ function extractSimilarityScores(summary: string) {
 
 // jsPDF implementation that matches PDFKit layout exactly
 
-import { jsPDF } from "jspdf";
-import fs from "fs";
-
 async function generatePDF(
   annotated: string[],
   diff: any,
