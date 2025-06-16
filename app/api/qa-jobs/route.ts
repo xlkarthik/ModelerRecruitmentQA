@@ -305,7 +305,13 @@ function extractSimilarityScores(summary: string) {
 function createFontDataFiles() {
   try {
     // Create the data directory structure that PDFKit expects
-    const dataDir = path.join(process.cwd(), 'node_modules', 'pdfkit', 'js', 'data');
+    const dataDir = path.join(
+      process.cwd(),
+      "node_modules",
+      "pdfkit",
+      "js",
+      "data"
+    );
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
     }
@@ -337,34 +343,36 @@ EndCharMetrics
 EndFontMetrics`;
 
     // Write Helvetica.afm file
-    const helveticaAfmPath = path.join(dataDir, 'Helvetica.afm');
+    const helveticaAfmPath = path.join(dataDir, "Helvetica.afm");
     if (!fs.existsSync(helveticaAfmPath)) {
       fs.writeFileSync(helveticaAfmPath, helveticaAfm);
-      console.log('✅ Created Helvetica.afm file');
+      console.log("✅ Created Helvetica.afm file");
     }
 
     // Write Helvetica-Bold.afm file
-    const helveticaBoldAfmPath = path.join(dataDir, 'Helvetica-Bold.afm');
+    const helveticaBoldAfmPath = path.join(dataDir, "Helvetica-Bold.afm");
     if (!fs.existsSync(helveticaBoldAfmPath)) {
-      const boldAfm = helveticaAfm.replace(/FontName Helvetica/g, 'FontName Helvetica-Bold')
-                                  .replace(/FullName Helvetica/g, 'FullName Helvetica-Bold');
+      const boldAfm = helveticaAfm
+        .replace(/FontName Helvetica/g, "FontName Helvetica-Bold")
+        .replace(/FullName Helvetica/g, "FullName Helvetica-Bold");
       fs.writeFileSync(helveticaBoldAfmPath, boldAfm);
-      console.log('✅ Created Helvetica-Bold.afm file');
+      console.log("✅ Created Helvetica-Bold.afm file");
     }
 
     // Write Times-Roman.afm file
-    const timesAfmPath = path.join(dataDir, 'Times-Roman.afm');
+    const timesAfmPath = path.join(dataDir, "Times-Roman.afm");
     if (!fs.existsSync(timesAfmPath)) {
-      const timesAfm = helveticaAfm.replace(/FontName Helvetica/g, 'FontName Times-Roman')
-                                   .replace(/FullName Helvetica/g, 'FullName Times-Roman')
-                                   .replace(/FamilyName Helvetica/g, 'FamilyName Times');
+      const timesAfm = helveticaAfm
+        .replace(/FontName Helvetica/g, "FontName Times-Roman")
+        .replace(/FullName Helvetica/g, "FullName Times-Roman")
+        .replace(/FamilyName Helvetica/g, "FamilyName Times");
       fs.writeFileSync(timesAfmPath, timesAfm);
-      console.log('✅ Created Times-Roman.afm file');
+      console.log("✅ Created Times-Roman.afm file");
     }
 
     return true;
   } catch (error) {
-    console.warn('⚠️ Could not create font files:', error);
+    console.warn("⚠️ Could not create font files:", error);
     return false;
   }
 }
@@ -378,16 +386,18 @@ async function generatePDF(
   return new Promise(async (resolve, reject) => {
     try {
       console.log("Starting PDF generation with font file fix...");
-      
+
       // Create the missing font files that PDFKit needs
       const fontFilesCreated = createFontDataFiles();
       if (!fontFilesCreated) {
-        console.warn("⚠️ Font files could not be created, proceeding anyway...");
+        console.warn(
+          "⚠️ Font files could not be created, proceeding anyway..."
+        );
       }
 
       // Download external font for better appearance (optional)
       let fontBuffer: Buffer | null = null;
-      
+
       try {
         const fontUrl = "https://demosetc.b-cdn.net/fonts/Roboto-Regular.ttf";
         console.log(`Downloading custom font from: ${fontUrl}`);
@@ -398,7 +408,10 @@ async function generatePDF(
         fontBuffer = Buffer.from(await fontRes.arrayBuffer());
         console.log(`✅ Custom font downloaded successfully`);
       } catch (fontError) {
-        console.warn("⚠️ Custom font download failed, will use built-in fonts:", fontError);
+        console.warn(
+          "⚠️ Custom font download failed, will use built-in fonts:",
+          fontError
+        );
         // Continue without custom font - built-in fonts should work now
       }
 
@@ -446,12 +459,18 @@ async function generatePDF(
           doc.font("MainFont");
           console.log("✅ Custom font registered and set");
         } catch (fontRegError) {
-          console.warn("⚠️ Custom font registration failed, using Helvetica:", fontRegError);
+          console.warn(
+            "⚠️ Custom font registration failed, using Helvetica:",
+            fontRegError
+          );
           try {
             doc.font("Helvetica");
             console.log("✅ Using Helvetica font");
           } catch (helveticaError) {
-            console.warn("⚠️ Helvetica failed, trying Times-Roman:", helveticaError);
+            console.warn(
+              "⚠️ Helvetica failed, trying Times-Roman:",
+              helveticaError
+            );
             doc.font("Times-Roman");
             console.log("✅ Using Times-Roman font");
           }
@@ -462,7 +481,10 @@ async function generatePDF(
           doc.font("Helvetica");
           console.log("✅ Using Helvetica font");
         } catch (helveticaError) {
-          console.warn("⚠️ Helvetica failed, trying Times-Roman:", helveticaError);
+          console.warn(
+            "⚠️ Helvetica failed, trying Times-Roman:",
+            helveticaError
+          );
           doc.font("Times-Roman");
           console.log("✅ Using Times-Roman font");
         }
@@ -475,7 +497,9 @@ async function generatePDF(
       if (logoBuffer) {
         try {
           doc.image(logoBuffer, 40, 40, { width: 150 });
-          doc.fontSize(14).text("3D Model QA Report", 50, 85, { continued: false });
+          doc
+            .fontSize(14)
+            .text("3D Model QA Report", 50, 85, { continued: false });
         } catch (imgError) {
           doc.fontSize(16).text("CharpstAR", { continued: false });
           doc.fontSize(14).text("3D Model QA Report", { continued: false });
@@ -541,28 +565,42 @@ async function generatePDF(
           return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         };
 
-        const valueStr = (typeof value === "number" ? formatNumber(value) : value) + unit;
-        const checkValue = typeof value === "number" ? value : parseFloat(String(value));
+        const valueStr =
+          (typeof value === "number" ? formatNumber(value) : value) + unit;
+        const checkValue =
+          typeof value === "number" ? value : parseFloat(String(value));
         const startY = doc.y;
 
         if (limit !== undefined) {
           const isCompliant = limit === null || checkValue <= limit;
           const circleColor = isCompliant ? "#34a853" : "#ea4335";
-          doc.circle(65, startY + 6, 5).fillColor(circleColor).fill();
+          doc
+            .circle(65, startY + 6, 5)
+            .fillColor(circleColor)
+            .fill();
         } else {
-          doc.circle(65, startY + 6, 5).fillColor("#9aa0a6").fill();
+          doc
+            .circle(65, startY + 6, 5)
+            .fillColor("#9aa0a6")
+            .fill();
         }
 
         doc.fillColor("#000000");
         doc.text(property, 80, startY, { continued: false, width: 160 });
-        doc.text(valueStr, 240, startY, { continued: false, width: 80, align: "right" });
+        doc.text(valueStr, 240, startY, {
+          continued: false,
+          width: 80,
+          align: "right",
+        });
 
         if (limit !== undefined) {
           doc
             .fillColor("#5f6368")
             .fontSize(10)
             .text(
-              limit === null ? "" : `(limit: ${limit ? formatNumber(limit) : limit}${unit})`,
+              limit === null
+                ? ""
+                : `(limit: ${limit ? formatNumber(limit) : limit}${unit})`,
               330,
               startY,
               { width: contentWidth - 280, align: "right" }
@@ -576,18 +614,36 @@ async function generatePDF(
 
       if (modelStats) {
         const requirements = modelStats.requirements;
-        addPropertyLine("Polycount", modelStats.triangles, requirements?.maxTriangles);
+        addPropertyLine(
+          "Polycount",
+          modelStats.triangles,
+          requirements?.maxTriangles
+        );
         addPropertyLine("Mesh Count", modelStats.meshCount, 5);
-        addPropertyLine("Material Count", modelStats.materialCount, requirements?.maxMaterials);
-        addPropertyLine("Double-sided Materials", modelStats.doubleSidedCount, 0);
+        addPropertyLine(
+          "Material Count",
+          modelStats.materialCount,
+          requirements?.maxMaterials
+        );
+        addPropertyLine(
+          "Double-sided Materials",
+          modelStats.doubleSidedCount,
+          0
+        );
         addPropertyLine(
           "File Size",
           parseFloat((modelStats.fileSize / (1024 * 1024)).toFixed(2)),
-          requirements?.maxFileSize ? requirements.maxFileSize / (1024 * 1024) : 15,
+          requirements?.maxFileSize
+            ? requirements.maxFileSize / (1024 * 1024)
+            : 15,
           "MB"
         );
       } else {
-        const properties = ["• Polycount: 150,000", "• Material Count: 5", "• File Size: 5.2MB"];
+        const properties = [
+          "• Polycount: 150,000",
+          "• Material Count: 5",
+          "• File Size: 5.2MB",
+        ];
         properties.forEach((prop) => {
           doc.text(prop);
           doc.moveDown(1.5);
@@ -609,7 +665,6 @@ async function generatePDF(
       doc.text(diff.status);
 
       doc.end();
-      
     } catch (err) {
       console.error("❌ PDF generation failed:", err);
       reject(err);
