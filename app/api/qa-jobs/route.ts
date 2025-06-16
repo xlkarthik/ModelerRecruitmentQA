@@ -13,20 +13,14 @@ import { supabase } from "../../../lib/supabase";
 function createFontDataFiles() {
   try {
     // The EXACT path from your error message
-    const bundledDataDir = path.join(
-      process.cwd(),
-      ".next",
-      "server",
-      "vendor-chunks",
-      "data"
-    );
-
+    const bundledDataDir = path.join(process.cwd(), '.next', 'server', 'vendor-chunks', 'data');
+    
     // Also try these alternative bundled locations
     const possiblePaths = [
       bundledDataDir, // Primary bundled location from error
-      path.join(process.cwd(), ".next", "server", "chunks", "data"),
-      path.join(process.cwd(), "node_modules", "pdfkit", "js", "data"), // Standard location
-      path.join(process.cwd(), "node_modules", "pdfkit", "data"),
+      path.join(process.cwd(), '.next', 'server', 'chunks', 'data'),
+      path.join(process.cwd(), 'node_modules', 'pdfkit', 'js', 'data'), // Standard location
+      path.join(process.cwd(), 'node_modules', 'pdfkit', 'data'),
     ];
 
     // Create minimal but complete Helvetica.afm file
@@ -117,68 +111,61 @@ EndFontMetrics`;
     for (const dataDir of possiblePaths) {
       try {
         console.log(`📁 Trying directory: ${dataDir}`);
-
+        
         if (!fs.existsSync(dataDir)) {
           fs.mkdirSync(dataDir, { recursive: true });
           console.log(`✅ Created directory: ${dataDir}`);
         }
 
         // Write Helvetica.afm file
-        const helveticaAfmPath = path.join(dataDir, "Helvetica.afm");
+        const helveticaAfmPath = path.join(dataDir, 'Helvetica.afm');
         if (!fs.existsSync(helveticaAfmPath)) {
           fs.writeFileSync(helveticaAfmPath, helveticaAfm);
           console.log(`✅ Created Helvetica.afm at: ${helveticaAfmPath}`);
           createdFiles = true;
         } else {
-          console.log(
-            `📄 Helvetica.afm already exists at: ${helveticaAfmPath}`
-          );
+          console.log(`📄 Helvetica.afm already exists at: ${helveticaAfmPath}`);
         }
 
         // Write Helvetica-Bold.afm file
-        const helveticaBoldAfmPath = path.join(dataDir, "Helvetica-Bold.afm");
+        const helveticaBoldAfmPath = path.join(dataDir, 'Helvetica-Bold.afm');
         if (!fs.existsSync(helveticaBoldAfmPath)) {
           const boldAfm = helveticaAfm
-            .replace(/FontName Helvetica/g, "FontName Helvetica-Bold")
-            .replace(/FullName Helvetica/g, "FullName Helvetica-Bold");
+            .replace(/FontName Helvetica/g, 'FontName Helvetica-Bold')
+            .replace(/FullName Helvetica/g, 'FullName Helvetica-Bold');
           fs.writeFileSync(helveticaBoldAfmPath, boldAfm);
-          console.log(
-            `✅ Created Helvetica-Bold.afm at: ${helveticaBoldAfmPath}`
-          );
+          console.log(`✅ Created Helvetica-Bold.afm at: ${helveticaBoldAfmPath}`);
           createdFiles = true;
         }
 
         // Write Times-Roman.afm file
-        const timesAfmPath = path.join(dataDir, "Times-Roman.afm");
+        const timesAfmPath = path.join(dataDir, 'Times-Roman.afm');
         if (!fs.existsSync(timesAfmPath)) {
           const timesAfm = helveticaAfm
-            .replace(/FontName Helvetica/g, "FontName Times-Roman")
-            .replace(/FullName Helvetica/g, "FullName Times-Roman")
-            .replace(/FamilyName Helvetica/g, "FamilyName Times");
+            .replace(/FontName Helvetica/g, 'FontName Times-Roman')
+            .replace(/FullName Helvetica/g, 'FullName Times-Roman')
+            .replace(/FamilyName Helvetica/g, 'FamilyName Times');
           fs.writeFileSync(timesAfmPath, timesAfm);
           console.log(`✅ Created Times-Roman.afm at: ${timesAfmPath}`);
           createdFiles = true;
         }
 
         // Also create Courier font
-        const courierAfmPath = path.join(dataDir, "Courier.afm");
+        const courierAfmPath = path.join(dataDir, 'Courier.afm');
         if (!fs.existsSync(courierAfmPath)) {
           const courierAfm = helveticaAfm
-            .replace(/FontName Helvetica/g, "FontName Courier")
-            .replace(/FullName Helvetica/g, "FullName Courier")
-            .replace(/FamilyName Helvetica/g, "FamilyName Courier")
-            .replace(/IsFixedPitch false/g, "IsFixedPitch true");
+            .replace(/FontName Helvetica/g, 'FontName Courier')
+            .replace(/FullName Helvetica/g, 'FullName Courier')
+            .replace(/FamilyName Helvetica/g, 'FamilyName Courier')
+            .replace(/IsFixedPitch false/g, 'IsFixedPitch true');
           fs.writeFileSync(courierAfmPath, courierAfm);
           console.log(`✅ Created Courier.afm at: ${courierAfmPath}`);
           createdFiles = true;
         }
+
       } catch (dirError) {
-        const errorMessage =
-          dirError instanceof Error ? dirError.message : String(dirError);
-        console.warn(
-          `⚠️ Could not create font files in ${dataDir}:`,
-          errorMessage
-        );
+        const errorMessage = dirError instanceof Error ? dirError.message : String(dirError);
+        console.warn(`⚠️ Could not create font files in ${dataDir}:`, errorMessage);
         continue;
       }
     }
@@ -191,7 +178,7 @@ EndFontMetrics`;
 
     return createdFiles;
   } catch (error) {
-    console.error("❌ Font creation failed:", error);
+    console.error('❌ Font creation failed:', error);
     return false;
   }
 }
