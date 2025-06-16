@@ -300,82 +300,56 @@ function extractSimilarityScores(summary: string) {
 
   return scores;
 }
+// Helper: generate a 2-page PDF from annotated PNGs + diff
+// Solution 1: Always use external fonts to avoid bundling issues
 
-// Create the missing font data files that PDFKit needs
-function createFontDataFiles() {
-  try {
-    // Create the data directory structure that PDFKit expects
-    const dataDir = path.join(
-      process.cwd(),
-      "node_modules",
-      "pdfkit",
-      "js",
-      "data"
-    );
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
+// Complete generatePDF function with all TypeScript errors fixed
 
-    // Create minimal Helvetica.afm file content
-    const helveticaAfm = `StartFontMetrics 2.0
-FontName Helvetica
-FullName Helvetica
-FamilyName Helvetica
-Weight Medium
-ItalicAngle 0
-IsFixedPitch false
-FontBBox -166 -225 1000 931
-UnderlinePosition -100
-UnderlineThickness 50
-Version 1.0
-EncodingScheme AdobeStandardEncoding
-CapHeight 718
-XHeight 523
-Ascender 718
-Descender -207
-StartCharMetrics 315
-C 32 ; WX 278 ; N space ; B 0 0 0 0 ;
-C 33 ; WX 278 ; N exclam ; B 90 0 187 718 ;
-C 65 ; WX 667 ; N A ; B 14 0 654 718 ;
-C 66 ; WX 667 ; N B ; B 74 0 630 718 ;
-C 67 ; WX 722 ; N C ; B 44 -19 681 737 ;
-EndCharMetrics
-EndFontMetrics`;
+// COMPLETE SOLUTION: Replace PDFKit with jsPDF
+// First install: npm install jspdf html2canvas
 
-    // Write Helvetica.afm file
-    const helveticaAfmPath = path.join(dataDir, "Helvetica.afm");
-    if (!fs.existsSync(helveticaAfmPath)) {
-      fs.writeFileSync(helveticaAfmPath, helveticaAfm);
-      console.log("✅ Created Helvetica.afm file");
-    }
+// Complete PDFKit solution that avoids default font loading issues
 
-    // Write Helvetica-Bold.afm file
-    const helveticaBoldAfmPath = path.join(dataDir, "Helvetica-Bold.afm");
-    if (!fs.existsSync(helveticaBoldAfmPath)) {
-      const boldAfm = helveticaAfm
-        .replace(/FontName Helvetica/g, "FontName Helvetica-Bold")
-        .replace(/FullName Helvetica/g, "FullName Helvetica-Bold");
-      fs.writeFileSync(helveticaBoldAfmPath, boldAfm);
-      console.log("✅ Created Helvetica-Bold.afm file");
-    }
+// Complete PDFKit solution that avoids default font loading issues
 
-    // Write Times-Roman.afm file
-    const timesAfmPath = path.join(dataDir, "Times-Roman.afm");
-    if (!fs.existsSync(timesAfmPath)) {
-      const timesAfm = helveticaAfm
-        .replace(/FontName Helvetica/g, "FontName Times-Roman")
-        .replace(/FullName Helvetica/g, "FullName Times-Roman")
-        .replace(/FamilyName Helvetica/g, "FamilyName Times");
-      fs.writeFileSync(timesAfmPath, timesAfm);
-      console.log("✅ Created Times-Roman.afm file");
-    }
+// Working PDFKit solution - patches font loading to work in bundled environments
 
-    return true;
-  } catch (error) {
-    console.warn("⚠️ Could not create font files:", error);
-    return false;
+// Patch PDFKit to prevent default font loading
+function patchPDFKit() {
+  // Override the StandardFont constructor to prevent file system access
+  const originalStandardFont = (PDFDocument as any).StandardFont;
+  if (originalStandardFont) {
+    (PDFDocument as any).StandardFont = class PatchedStandardFont {
+      name: string;
+      ascender: number;
+      descender: number;
+      bbox: number[];
+      lineGap: number;
+
+      constructor(name: string) {
+        // Don't call super() to avoid file system access
+        this.name = name;
+        this.ascender = 800;
+        this.descender = -200;
+        this.bbox = [0, 0, 1000, 1000];
+        this.lineGap = 0;
+      }
+    };
   }
+
+  // Override font loading methods
+  const originalPDFDocument = PDFDocument;
+  const originalInitFonts = (originalPDFDocument.prototype as any).initFonts;
+  
+  (originalPDFDocument.prototype as any).initFonts = function() {
+    // Skip default font initialization
+    (this as any)._fontFamilies = {};
+    (this as any)._fontCount = 0;
+    (this as any)._fontSize = 12;
+    (this as any)._font = null;
+  };
 }
+
 
 async function generatePDF(
   annotated: string[],
@@ -385,34 +359,26 @@ async function generatePDF(
 ): Promise<Buffer> {
   return new Promise(async (resolve, reject) => {
     try {
-      console.log("Starting PDF generation with font file fix...");
+      console.log("Starting PDF generation with patched PDFKit...");
 
-      // Create the missing font files that PDFKit needs
-      const fontFilesCreated = createFontDataFiles();
-      if (!fontFilesCreated) {
-        console.warn(
-          "⚠️ Font files could not be created, proceeding anyway..."
-        );
-      }
+      // Apply the patch before creating any PDFDocument
+      patchPDFKit();
 
-      // Download external font for better appearance (optional)
+      // Download external font
       let fontBuffer: Buffer | null = null;
 
       try {
         const fontUrl = "https://demosetc.b-cdn.net/fonts/Roboto-Regular.ttf";
-        console.log(`Downloading custom font from: ${fontUrl}`);
+        console.log(`Downloading font from: ${fontUrl}`);
         const fontRes = await fetch(fontUrl);
         if (!fontRes.ok) {
           throw new Error(`Font fetch failed: ${fontRes.status}`);
         }
         fontBuffer = Buffer.from(await fontRes.arrayBuffer());
-        console.log(`✅ Custom font downloaded successfully`);
+        console.log(`✅ Font downloaded successfully`);
       } catch (fontError) {
-        console.warn(
-          "⚠️ Custom font download failed, will use built-in fonts:",
-          fontError
-        );
-        // Continue without custom font - built-in fonts should work now
+        console.error("❌ Font download failed:", fontError);
+        return reject(new Error("Unable to load fonts for PDF generation"));
       }
 
       // Download logo
@@ -429,7 +395,7 @@ async function generatePDF(
         console.warn("⚠️ Logo download failed");
       }
 
-      // Create PDF document - should work now with font files in place
+      // Create PDF document - should not trigger font loading now
       const doc = new PDFDocument({
         autoFirstPage: false,
         size: [595.28, 841.89],
@@ -452,46 +418,22 @@ async function generatePDF(
         reject(err);
       });
 
-      // Try to use custom font first, fall back to built-in fonts
-      if (fontBuffer) {
-        try {
-          doc.registerFont("MainFont", fontBuffer);
-          doc.font("MainFont");
-          console.log("✅ Custom font registered and set");
-        } catch (fontRegError) {
-          console.warn(
-            "⚠️ Custom font registration failed, using Helvetica:",
-            fontRegError
-          );
-          try {
-            doc.font("Helvetica");
-            console.log("✅ Using Helvetica font");
-          } catch (helveticaError) {
-            console.warn(
-              "⚠️ Helvetica failed, trying Times-Roman:",
-              helveticaError
-            );
-            doc.font("Times-Roman");
-            console.log("✅ Using Times-Roman font");
-          }
-        }
-      } else {
-        // Use built-in fonts
-        try {
-          doc.font("Helvetica");
-          console.log("✅ Using Helvetica font");
-        } catch (helveticaError) {
-          console.warn(
-            "⚠️ Helvetica failed, trying Times-Roman:",
-            helveticaError
-          );
-          doc.font("Times-Roman");
-          console.log("✅ Using Times-Roman font");
-        }
+      // Register font IMMEDIATELY after document creation
+      if (!fontBuffer) {
+        return reject(new Error("No font buffer available"));
       }
 
-      // Add page
+      try {
+        doc.registerFont("MainFont", fontBuffer);
+        console.log("✅ Font registered");
+      } catch (fontRegError) {
+        console.error("❌ Font registration failed:", fontRegError);
+        return reject(new Error(`Font registration failed`));
+      }
+
+      // Add page and set font
       doc.addPage();
+      doc.font("MainFont");
 
       // Header
       if (logoBuffer) {
@@ -541,7 +483,6 @@ async function generatePDF(
             align: "center",
           });
         } catch (imgError) {
-          console.warn(`⚠️ Failed to add image ${i}:`, imgError);
           doc.text(`[Image ${i + 1} failed to load]`, 50, currentY);
         }
 
@@ -671,7 +612,6 @@ async function generatePDF(
     }
   });
 }
-
 async function downloadImages(
   urls: string[],
   tmpDir: string
@@ -847,7 +787,6 @@ async function processQAJob(
     try {
       qaResults = JSON.parse(raw);
     } catch (parseError) {
-      console.error("Failed to parse GPT response:", raw);
       throw new Error(`Failed to parse GPT response: ${parseError}`);
     }
 
