@@ -315,7 +315,6 @@ async function generatePDF(
 
       // Download a reliable font from a CDN
       let fontBuffer: Buffer;
-      let fontBuffer: Buffer | null = null;
 
       try {
         // Try multiple font sources
