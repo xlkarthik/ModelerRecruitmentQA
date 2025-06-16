@@ -343,7 +343,6 @@ function extractSimilarityScores(summary: string) {
 
 // Working PDFKit solution - patches font loading to work in bundled environments
 
-import PDFDocument from "pdfkit";
 
 // Patch PDFKit to prevent default font loading
 function patchPDFKit() {
