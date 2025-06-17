@@ -146,41 +146,47 @@ async function generateCertificatePDF(data: {
     align: "center",
   });
 
-  // Main content area - well spaced from header
-  const contentStartY = margin + 90;
+  // Main content area - properly centered and spaced
+  const contentCenterY = (pageHeight - 65 - 60) / 2 + 65; // Center between header and footer
 
   doc.setTextColor(gray.r, gray.g, gray.b);
   doc.setFontSize(16);
-  doc.text("This is to certify that", pageWidth / 2, contentStartY, {
+  doc.text("This is to certify that", pageWidth / 2, contentCenterY - 40, {
     align: "center",
   });
 
-  // Name with proper spacing
+  // Name - prominently displayed
   doc.setTextColor(dark.r, dark.g, dark.b);
   doc.setFontSize(36);
-  doc.text(data.candidateName, pageWidth / 2, contentStartY + 30, {
+  doc.text(data.candidateName, pageWidth / 2, contentCenterY - 10, {
     align: "center",
   });
 
-  // Line under name - properly sized
+  // Line under name - centered and proportional
   doc.setDrawColor(blue.r, blue.g, blue.b);
-  doc.setLineWidth(0.8);
-  const nameLineY = contentStartY + 38;
-  doc.line(pageWidth / 2 - 50, nameLineY, pageWidth / 2 + 50, nameLineY);
+  doc.setLineWidth(1);
+  doc.line(
+    pageWidth / 2 - 60,
+    contentCenterY - 2,
+    pageWidth / 2 + 60,
+    contentCenterY - 2
+  );
 
-  // Achievement text with good spacing
+  // Achievement text - properly spaced
   doc.setTextColor(dark.r, dark.g, dark.b);
   doc.setFontSize(16);
   doc.text(
     `has successfully completed the ${data.worktestLevel} Level`,
     pageWidth / 2,
-    contentStartY + 55,
+    contentCenterY + 20,
     { align: "center" }
   );
+
+  doc.setFontSize(15);
   doc.text(
     "3D Modeling Worktest with Outstanding Results",
     pageWidth / 2,
-    contentStartY + 75,
+    contentCenterY + 40,
     { align: "center" }
   );
 
