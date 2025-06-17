@@ -143,7 +143,7 @@ async function generateCertificatePDF(data: {
   const subtitleY = titleY + 14;
 
   doc.setFont("helvetica", "bold").setFontSize(30).setTextColor(33);
-  doc.text("CERTIFICATE", W / 2, titleY, { align: "center" });
+  doc.text("CERTIFICATE`", W / 2, titleY, { align: "center" });
 
   doc.setDrawColor("#666666").setLineWidth(0.5);
   doc.line(W / 2 - 70, titleY + 4, W / 2 + 70, titleY + 4);
