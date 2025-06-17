@@ -93,70 +93,102 @@ function generateCertificatePDF(data: {
   certificateId: string;
   similarityScores: any;
 }): Buffer {
-  // Create PDF in landscape mode
   const doc = new jsPDF({
-    orientation: 'landscape',
-    unit: 'mm',
-    format: 'a4'
+    orientation: "landscape",
+    unit: "mm",
+    format: "a4",
   });
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  // Colors (jsPDF uses RGB values 0-255)
-  const primaryBlue = { r: 102, g: 126, b: 234 };
-  const darkGray = { r: 45, g: 55, b: 72 };
-  const lightGray = { r: 113, g: 128, b: 150 };
-  const green = { r: 56, g: 161, b: 105 };
+  // Colors
+  const blue = { r: 102, g: 126, b: 234 };
+  const dark = { r: 45, g: 55, b: 72 };
+  const gray = { r: 113, g: 128, b: 150 };
 
   // Header background
-  doc.setFillColor(primaryBlue.r, primaryBlue.g, primaryBlue.b);
-  doc.rect(0, 0, pageWidth, 50, 'F');
+  doc.setFillColor(blue.r, blue.g, blue.b);
+  doc.rect(0, 0, pageWidth, 65, "F");
 
-  // Title
+  // Header text
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(24);
-  doc.text('CERTIFICATE OF ACHIEVEMENT', pageWidth / 2, 20, { align: 'center' });
-  
-  doc.setFontSize(14);
-  doc.text('3D Modeling Worktest Completion', pageWidth / 2, 35, { align: 'center' });
+  doc.setFontSize(34);
+  doc.text("CERTIFICATE OF ACHIEVEMENT", pageWidth / 2, 30, {
+    align: "center",
+  });
+
+  doc.setFontSize(16);
+  doc.text("3D Modeling Worktest Completion", pageWidth / 2, 50, {
+    align: "center",
+  });
 
   // Main content
-  doc.setTextColor(darkGray.r, darkGray.g, darkGray.b);
-  
-  // "This is to certify that"
-  doc.setFontSize(12);
-  doc.text('This is to certify that', pageWidth / 2, 70, { align: 'center' });
+  doc.setTextColor(dark.r, dark.g, dark.b);
 
-  // Candidate name
-  doc.setFontSize(28);
-  doc.text(data.candidateName, pageWidth / 2, 90, { align: 'center' });
+  doc.setFontSize(14);
+  doc.text("This is to certify that", pageWidth / 2, 90, { align: "center" });
 
-  // Achievement text
+  doc.setFontSize(38);
+  doc.text(data.candidateName, pageWidth / 2, 115, { align: "center" });
+
+  doc.setFontSize(18);
+  doc.text(
+    `has successfully completed the ${data.worktestLevel} Level`,
+    pageWidth / 2,
+    140,
+    { align: "center" }
+  );
+
   doc.setFontSize(16);
-  doc.text(`has successfully completed the ${data.worktestLevel} LEVEL`, pageWidth / 2, 110, { align: 'center' });
-  doc.text('3D Modeling Worktest with outstanding results', pageWidth / 2, 125, { align: 'center' });
+  doc.text(
+    "3D Modeling Worktest with Outstanding Results",
+    pageWidth / 2,
+    160,
+    { align: "center" }
+  );
 
+  // Footer with better layout
+  const footerY = pageHeight - 35;
 
+  // Company name - left
+  doc.setTextColor(blue.r, blue.g, blue.b);
+  doc.setFontSize(22);
+  doc.text("CharpstAR", 25, footerY - 15);
 
-  // Footer
-  doc.setTextColor(lightGray.r, lightGray.g, lightGray.b);
+  // Date - left below company
+  doc.setTextColor(gray.r, gray.g, gray.b);
+  doc.setFontSize(11);
+  doc.text(`Date: ${data.completionDate}`, 25, footerY);
+
+  // Certificate ID - center bottom
+  doc.setFontSize(9);
+  doc.setTextColor(gray.r, gray.g, gray.b);
+  doc.text(
+    `Certificate ID: ${data.certificateId}`,
+    pageWidth / 2,
+    footerY + 10,
+    { align: "center" }
+  );
+
+  // Signature - right
+  const sigX = pageWidth - 60;
+  doc.setDrawColor(dark.r, dark.g, dark.b);
+  doc.setLineWidth(0.8);
+  doc.line(sigX - 30, footerY - 10, sigX + 30, footerY - 10);
+
+  doc.setTextColor(dark.r, dark.g, dark.b);
+  doc.setFontSize(11);
+  doc.text("Authorized Signature", sigX, footerY, { align: "center" });
+
   doc.setFontSize(10);
-  doc.text(`Date: ${data.completionDate}`, 20, 150);
-  doc.setFontSize(8);
-  doc.text(`Certificate ID: ${data.certificateId}`, 20, 160);
+  doc.setTextColor(gray.r, gray.g, gray.b);
+  doc.text("CharpstAR Team", sigX, footerY + 10, { align: "center" });
 
-  // Signature area
-  doc.line(200, 155, 250, 155);
-  doc.setFontSize(10);
-  doc.text('CharpstAR Team', 225, 165, { align: 'center' });
+  // Border
+  doc.setDrawColor(gray.r, gray.g, gray.b);
+  doc.setLineWidth(0.5);
+  doc.rect(8, 8, pageWidth - 16, pageHeight - 16);
 
-  // Company name
-  doc.setTextColor(primaryBlue.r, primaryBlue.g, primaryBlue.b);
-  doc.setFontSize(16);
-  doc.text('CharpstAR', 20, 165);
-
-  // Return as buffer
-  const pdfOutput = doc.output('arraybuffer');
-  return Buffer.from(pdfOutput);
+  return Buffer.from(doc.output("arraybuffer"));
 }
