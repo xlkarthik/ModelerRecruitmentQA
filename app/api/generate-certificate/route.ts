@@ -192,7 +192,7 @@ async function generatePassPDF(data: {
   const lines = [
     `has successfully submitted a 3D model that meets our basic technical requirements for human review!`,
     `Next Steps: Please email this verification along with your .glb model`,
-    `to recruitment@charpstar.com for full evaluation by our team.`,
+    ``,
   ];
 
   y += 8;
