@@ -120,102 +120,153 @@ async function generateCertificatePDF(data: {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  // Colors
+  // Professional color palette
   const blue = { r: 102, g: 126, b: 234 };
   const dark = { r: 45, g: 55, b: 72 };
   const gray = { r: 113, g: 128, b: 150 };
+  const lightGray = { r: 248, g: 250, b: 252 };
 
   // Fetch logo
   const logoUrl =
     "https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png";
   const logoBase64 = await getImageAsBase64(logoUrl);
 
-  // Header background
-  doc.setFillColor(blue.r, blue.g, blue.b);
-  doc.rect(0, 0, pageWidth, 65, "F");
+  // Outer border with subtle shadow effect
+  doc.setFillColor(230, 230, 230);
+  doc.rect(5, 5, pageWidth - 10, pageHeight - 10, "F");
 
-  // Add logo in header if available
+  // Main certificate background
+  doc.setFillColor(255, 255, 255);
+  doc.rect(10, 10, pageWidth - 20, pageHeight - 20, "F");
+
+  // Header section with gradient-like effect
+  doc.setFillColor(blue.r, blue.g, blue.b);
+  doc.rect(10, 10, pageWidth - 20, 75, "F");
+
+  // Header accent line
+  doc.setFillColor(blue.r - 20, blue.g - 20, blue.b - 20);
+  doc.rect(10, 80, pageWidth - 20, 5, "F");
+
+  // Logo placement - top left with proper spacing
   if (logoBase64) {
     try {
-      doc.addImage(logoBase64, "PNG", 20, 15, 30, 12);
+      doc.addImage(logoBase64, "PNG", 25, 25, 35, 14);
     } catch (error) {
       console.error("Error adding logo to PDF:", error);
     }
   }
 
-  // Header text
+  // Main title - better typography
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(34);
-  doc.text("CERTIFICATE OF ACHIEVEMENT", pageWidth / 2, 30, {
+  doc.setFontSize(32);
+  doc.text("CERTIFICATE OF ACHIEVEMENT", pageWidth / 2, 40, {
     align: "center",
   });
 
-  doc.setFontSize(16);
-  doc.text("3D Modeling Worktest Completion", pageWidth / 2, 50, {
-    align: "center",
-  });
-
-  // Main content
-  doc.setTextColor(dark.r, dark.g, dark.b);
-
+  // Subtitle with better spacing
   doc.setFontSize(14);
-  doc.text("This is to certify that", pageWidth / 2, 90, { align: "center" });
+  doc.text("3D Modeling Worktest Completion", pageWidth / 2, 60, {
+    align: "center",
+  });
 
-  doc.setFontSize(38);
-  doc.text(data.candidateName, pageWidth / 2, 115, { align: "center" });
+  // Content area with proper margins
+  const contentStartY = 110;
+  const contentCenterX = pageWidth / 2;
 
-  doc.setFontSize(18);
+  // Certificate text with improved hierarchy
+  doc.setTextColor(gray.r, gray.g, gray.b);
+  doc.setFontSize(14);
+  doc.text("This is to certify that", contentCenterX, contentStartY, {
+    align: "center",
+  });
+
+  // Candidate name - prominent styling
+  doc.setTextColor(dark.r, dark.g, dark.b);
+  doc.setFontSize(42);
+  doc.text(data.candidateName, contentCenterX, contentStartY + 30, {
+    align: "center",
+  });
+
+  // Decorative line under name
+  doc.setDrawColor(blue.r, blue.g, blue.b);
+  doc.setLineWidth(1);
+  const nameWidth = doc.getTextWidth(data.candidateName) * 0.42; // Approximate width
+  doc.line(
+    contentCenterX - nameWidth / 2,
+    contentStartY + 38,
+    contentCenterX + nameWidth / 2,
+    contentStartY + 38
+  );
+
+  // Achievement text with better spacing
+  doc.setTextColor(dark.r, dark.g, dark.b);
+  doc.setFontSize(16);
   doc.text(
     `has successfully completed the ${data.worktestLevel} Level`,
-    pageWidth / 2,
-    140,
+    contentCenterX,
+    contentStartY + 55,
     { align: "center" }
   );
 
-  doc.setFontSize(16);
+  doc.setFontSize(14);
+  doc.setTextColor(gray.r, gray.g, gray.b);
   doc.text(
     "3D Modeling Worktest with Outstanding Results",
-    pageWidth / 2,
-    160,
+    contentCenterX,
+    contentStartY + 75,
     { align: "center" }
   );
 
-  // Footer with better layout
-  const footerY = pageHeight - 35;
+  // Footer section with professional layout
+  const footerY = pageHeight - 45;
 
-  // Date - left
+  // Footer background
+  doc.setFillColor(lightGray.r, lightGray.g, lightGray.b);
+  doc.rect(10, footerY - 15, pageWidth - 20, 40, "F");
+
+  // Left section - Date
   doc.setTextColor(gray.r, gray.g, gray.b);
   doc.setFontSize(11);
-  doc.text(`Date: ${data.completionDate}`, 25, footerY);
+  doc.text("Issued on", 30, footerY - 5);
+  doc.setTextColor(dark.r, dark.g, dark.b);
+  doc.setFontSize(12);
+  doc.text(data.completionDate, 30, footerY + 5);
 
-  // Certificate ID - center bottom
-  doc.setFontSize(9);
+  // Center section - Certificate ID with better styling
   doc.setTextColor(gray.r, gray.g, gray.b);
-  doc.text(
-    `Certificate ID: ${data.certificateId}`,
-    pageWidth / 2,
-    footerY + 10,
-    { align: "center" }
-  );
+  doc.setFontSize(9);
+  doc.text("Certificate ID", contentCenterX, footerY - 5, { align: "center" });
+  doc.setFontSize(10);
+  doc.text(data.certificateId, contentCenterX, footerY + 5, {
+    align: "center",
+  });
 
-  // Signature - right
-  const sigX = pageWidth - 60;
+  // Right section - Signature with professional styling
+  const sigX = pageWidth - 70;
+
+  // Signature line with proper styling
   doc.setDrawColor(dark.r, dark.g, dark.b);
-  doc.setLineWidth(0.8);
-  doc.line(sigX - 30, footerY - 10, sigX + 30, footerY - 10);
+  doc.setLineWidth(1);
+  doc.line(sigX - 40, footerY - 8, sigX + 10, footerY - 8);
+
+  // Signature labels
+  doc.setTextColor(gray.r, gray.g, gray.b);
+  doc.setFontSize(9);
+  doc.text("Authorized by", sigX - 15, footerY + 2, { align: "center" });
 
   doc.setTextColor(dark.r, dark.g, dark.b);
   doc.setFontSize(11);
-  doc.text("Authorized Signature", sigX, footerY, { align: "center" });
+  doc.text("CharpstAR Team", sigX - 15, footerY + 12, { align: "center" });
 
-  doc.setFontSize(10);
-  doc.setTextColor(gray.r, gray.g, gray.b);
-  doc.text("CharpstAR Team", sigX, footerY + 10, { align: "center" });
-
-  // Border
+  // Main border with professional styling
   doc.setDrawColor(gray.r, gray.g, gray.b);
-  doc.setLineWidth(0.5);
-  doc.rect(8, 8, pageWidth - 16, pageHeight - 16);
+  doc.setLineWidth(0.8);
+  doc.rect(10, 10, pageWidth - 20, pageHeight - 20);
+
+  // Inner border for elegance
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.3);
+  doc.rect(15, 15, pageWidth - 30, pageHeight - 30);
 
   return Buffer.from(doc.output("arraybuffer"));
 }
