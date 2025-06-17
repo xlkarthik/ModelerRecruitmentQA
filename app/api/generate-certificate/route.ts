@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "../../../lib/supabase";
 import PDFDocument from "pdfkit";
+import path from "path";
+import fs from "fs";
 
 export async function POST(request: NextRequest) {
   try {
@@ -98,6 +100,25 @@ async function generateCertificatePDF(data: {
         margins: { top: 60, bottom: 60, left: 60, right: 60 },
       });
 
+      // Register custom fonts if available
+      const fontsPath = path.join(process.cwd(), "public", "fonts");
+
+      try {
+        // Check if custom fonts exist, if not, fallback to built-in fonts
+        if (fs.existsSync(path.join(fontsPath, "Roboto-Regular.ttf"))) {
+          doc.registerFont(
+            "Roboto",
+            path.join(fontsPath, "Roboto-Regular.ttf")
+          );
+          doc.registerFont(
+            "Roboto-Bold",
+            path.join(fontsPath, "Roboto-Bold.ttf")
+          );
+        }
+      } catch (fontError) {
+        console.log("Custom fonts not available, using built-in fonts");
+      }
+
       const buffers: Buffer[] = [];
       doc.on("data", buffers.push.bind(buffers));
       doc.on("end", () => resolve(Buffer.concat(buffers)));
@@ -109,40 +130,59 @@ async function generateCertificatePDF(data: {
       const lightGray = "#718096";
       const green = "#38a169";
 
+      // Use available fonts
+      const regularFont =
+        doc._registeredFonts && doc._registeredFonts["Roboto"]
+          ? "Roboto"
+          : "Times-Roman";
+      const boldFont =
+        doc._registeredFonts && doc._registeredFonts["Roboto-Bold"]
+          ? "Roboto-Bold"
+          : "Times-Bold";
+
       // Header with gradient background
       doc.rect(0, 0, 842, 150).fill(primaryBlue);
 
-      // Title - using default fonts only
+      // Title
       doc
         .fillColor("white")
         .fontSize(36)
+        .font(boldFont)
         .text("CERTIFICATE OF ACHIEVEMENT", 60, 40, {
           align: "center",
           width: 722,
         });
 
-      doc.fontSize(18).text("3D Modeling Worktest Completion", 60, 85, {
-        align: "center",
-        width: 722,
-      });
+      doc
+        .fontSize(18)
+        .font(regularFont)
+        .text("3D Modeling Worktest Completion", 60, 85, {
+          align: "center",
+          width: 722,
+        });
 
       // Main content area
       doc.fillColor(darkGray);
 
       // "This is to certify that"
-      doc.fontSize(16).text("This is to certify that", 60, 200, {
-        align: "center",
-        width: 722,
-      });
+      doc
+        .fontSize(16)
+        .font(regularFont)
+        .text("This is to certify that", 60, 200, {
+          align: "center",
+          width: 722,
+        });
 
       // Candidate name (large)
       doc
         .fontSize(42)
+        .font(boldFont)
         .text(data.candidateName, 60, 230, { align: "center", width: 722 });
 
       // Achievement text
       doc
         .fontSize(20)
+        .font(regularFont)
         .text(
           `has successfully completed the ${data.worktestLevel} LEVEL`,
           60,
@@ -185,6 +225,7 @@ async function generateCertificatePDF(data: {
         doc
           .fillColor(green)
           .fontSize(24)
+          .font(boldFont)
           .text(
             `${score.value}${typeof score.value === "number" ? "%" : ""}`,
             x,
@@ -199,6 +240,7 @@ async function generateCertificatePDF(data: {
         doc
           .fillColor(lightGray)
           .fontSize(12)
+          .font(regularFont)
           .text(score.label.toUpperCase(), x, scoresY + 35, {
             align: "center",
             width: scoreWidth,
@@ -212,11 +254,13 @@ async function generateCertificatePDF(data: {
       doc
         .fillColor(lightGray)
         .fontSize(14)
+        .font(regularFont)
         .text(`Date: ${data.completionDate}`, 60, footerY);
 
       // Certificate ID
       doc
         .fontSize(10)
+        .font(regularFont)
         .text(`Certificate ID: ${data.certificateId}`, 60, footerY + 20);
 
       // Signature line
@@ -225,15 +269,19 @@ async function generateCertificatePDF(data: {
         .lineTo(780, footerY + 30)
         .stroke();
 
-      doc.fontSize(12).text("CharpstAR Team", 600, footerY + 40, {
-        align: "center",
-        width: 180,
-      });
+      doc
+        .fontSize(12)
+        .font(regularFont)
+        .text("CharpstAR Team", 600, footerY + 40, {
+          align: "center",
+          width: 180,
+        });
 
       // Company logo area (text for now)
       doc
         .fillColor(primaryBlue)
         .fontSize(24)
+        .font(boldFont)
         .text("CharpstAR", 60, footerY + 20);
 
       doc.end();
