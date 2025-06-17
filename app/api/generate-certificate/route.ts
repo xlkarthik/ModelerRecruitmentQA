@@ -184,18 +184,7 @@ async function generateCertificatePDF(data: {
   // Instruction block: place 30mm above footer
   const footerY = H - margin - 35;
   const instructionY = footerY - 20;
-  doc.setFont("helvetica", "italic").setFontSize(12).setTextColor(33);
-  const instructionLines = [
-    `has successfully completed the initial ${data.worktestLevel} level worktest!`,
-    `Please download this certificate and email it along with your exported .glb model`,
-    `to recruitment@charpstar.com for further review.`,
-  ];
-
-  doc.text(instructionLines, W / 2, instructionY, {
-    align: "center",
-    maxWidth: W - margin * 2,
-    lineHeightFactor: 1.5,
-  });
+ 
 
   // Footer
   doc.setFont("helvetica", "italic").setFontSize(10).setTextColor(100);
