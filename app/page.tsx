@@ -1266,6 +1266,20 @@ export default function WorktestQA() {
                   </p>
                 </div>
 
+                {/* DEBUG INFO - REMOVE LATER */}
+                <div className="bg-yellow-100 p-4 mb-4">
+                  <h4 className="font-bold">DEBUG INFO:</h4>
+                  <p>qaResults exists: {qaResults ? "YES" : "NO"}</p>
+                  <p>
+                    qaResults.summary: "
+                    {qaResults?.summary || "EMPTY/UNDEFINED"}"
+                  </p>
+                  <p>
+                    qaResults.status: "{qaResults?.status || "EMPTY/UNDEFINED"}"
+                  </p>
+                  <p>Full qaResults: {JSON.stringify(qaResults, null, 2)}</p>
+                </div>
+
                 {/* QA Summary */}
                 {qaResults?.summary && (
                   <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
