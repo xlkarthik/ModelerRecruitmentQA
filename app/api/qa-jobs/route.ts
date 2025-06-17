@@ -256,7 +256,7 @@ type QAResults = {
   };
 };
 
-// Helper function to extract similarity scores from GPT summary - IMPROVED VERSION
+// Helper function to extract similarity scores and clean summary
 function extractSimilarityScores(summary: string) {
   const scores: any = {};
 
@@ -373,6 +373,18 @@ function extractSimilarityScores(summary: string) {
   console.log("From summary:", summary);
 
   return scores;
+}
+
+// Helper function to clean summary by removing similarity scores
+function cleanSummary(summary: string): string {
+  // Remove the similarity scores portion from the summary
+  const cleanedSummary = summary
+    .replace(/\.?\s*Similarity scores:.*$/i, "") // Remove everything from "Similarity scores:" onwards
+    .replace(/\.?\s*silhouette \d+%.*$/i, "") // Fallback: remove from "silhouette X%" onwards
+    .trim();
+
+  // Ensure it ends with a period
+  return cleanedSummary.endsWith(".") ? cleanedSummary : cleanedSummary + ".";
 }
 
 async function downloadImages(
@@ -560,6 +572,9 @@ Output *only* a single valid JSON object, for example:
 
     // Extract similarity scores from summary
     qaResults.similarityScores = extractSimilarityScores(qaResults.summary);
+
+    // Clean the summary to remove similarity scores for display
+    qaResults.summary = cleanSummary(qaResults.summary);
 
     // Store QA results in database - SIMPLE VERSION
     const { data: updateData, error: updateError } = await supabase
