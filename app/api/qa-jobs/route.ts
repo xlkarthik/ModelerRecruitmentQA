@@ -429,7 +429,7 @@ async function processQAJob(
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-o",
+        model: "gpt-4o",
         stream: false,
         messages,
       }),
