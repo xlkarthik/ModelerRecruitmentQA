@@ -262,6 +262,11 @@ type QAResults = {
   };
 };
 
+// Type declaration for global
+declare global {
+  var completedJobs: Map<string, any> | undefined;
+}
+
 // Simple in-memory cache for QA results
 const qaResultsCache = new Map<string, any>();
 
