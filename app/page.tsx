@@ -195,17 +195,32 @@ export default function WorktestQA() {
     // This effect is now redundant - polling is handled in the main effect above
   }, []);
 
-  // Poll for job status - SIMPLIFIED AND ROBUST VERSION
+  // Poll for job status - WITH TIMEOUT PROTECTION
   useEffect(() => {
     if (!currentJobId || qaComplete) return;
 
     console.log("Starting polling for job:", currentJobId);
 
     let intervalId: NodeJS.Timeout;
+    let timeoutId: NodeJS.Timeout;
     let isActive = true;
+    let pollCount = 0;
+    const maxPolls = 150; // 5 minutes at 2-second intervals
 
     const checkJobStatus = async () => {
-      if (!isActive) return; // Early exit if effect was cleaned up
+      if (!isActive) return;
+
+      pollCount++;
+      console.log(`Poll #${pollCount} for job ${currentJobId}`);
+
+      // Timeout after 5 minutes
+      if (pollCount > maxPolls) {
+        console.error("⏰ Job polling timeout - stopping after 5 minutes");
+        setError("Job is taking too long to complete. Please try again.");
+        setLoadingQA(false);
+        isActive = false;
+        return;
+      }
 
       try {
         const response = await fetch(`/api/qa-jobs?jobId=${currentJobId}`);
@@ -219,27 +234,32 @@ export default function WorktestQA() {
         }
 
         const data = await response.json();
-        console.log("Job status response:", data.status);
+        console.log(`Job status response (poll #${pollCount}):`, data.status);
 
-        if (!isActive) return; // Check again before processing
+        if (!isActive) return;
 
         if (data.status === "complete") {
           console.log("🎉 Job completed! Stopping polling...");
 
           if (data.qaResults) {
+            console.log("📊 QA Results:", data.qaResults);
             setQaResults(data.qaResults);
+          } else {
+            console.warn("⚠️ No QA results in response");
           }
 
           setQaComplete(true);
           setLoadingQA(false);
-          isActive = false; // Stop any further polling
+          isActive = false;
         } else if (data.status === "failed") {
           console.error("❌ Job failed:", data.error);
           setError(data.error || "QA processing failed");
           setLoadingQA(false);
           isActive = false;
         } else {
-          console.log(`⏳ Job still ${data.status}, continuing...`);
+          console.log(
+            `⏳ Job still ${data.status}, continuing... (${pollCount}/${maxPolls})`
+          );
         }
       } catch (err: any) {
         console.error("Error checking job status:", err);
@@ -253,6 +273,14 @@ export default function WorktestQA() {
     intervalId = setInterval(checkJobStatus, 2000);
     checkJobStatus(); // Call immediately
 
+    // Backup timeout (should never hit this if polling works)
+    timeoutId = setTimeout(() => {
+      console.error("🚨 Hard timeout - forcing job completion check");
+      isActive = false;
+      setError("Job processing timeout. Please refresh and try again.");
+      setLoadingQA(false);
+    }, 6 * 60 * 1000); // 6 minutes
+
     // Cleanup function
     return () => {
       console.log("🧹 Cleaning up polling for job:", currentJobId);
@@ -260,8 +288,11 @@ export default function WorktestQA() {
       if (intervalId) {
         clearInterval(intervalId);
       }
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
-  }, [currentJobId, qaComplete]); // Include qaComplete to stop when it changes
+  }, [currentJobId, qaComplete]);
 
   // Rotate through facts while loading
   useEffect(() => {
