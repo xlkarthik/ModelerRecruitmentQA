@@ -121,113 +121,87 @@ async function generateCertificatePDF(data: {
   const margin = 20;
 
   // Outer border
-  doc.setDrawColor("#CCCCCC");
-  doc.setLineWidth(1);
+  doc.setDrawColor("#CCCCCC").setLineWidth(1);
   doc.rect(margin, margin, W - margin * 2, H - margin * 2);
 
-  // Header background wash (taller to fit larger logo + gap)
+  // Header background wash
   doc.setFillColor(245, 245, 245);
   doc.rect(margin + 1, margin + 1, W - (margin + 1) * 2, 70, "F");
 
-  // Logo (wider, centered at top)
+  // Logo (wider, centered)
   const logoData = await getImageAsBase64(
     "https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
   );
-  const logoWidth = 60;
-  const logoHeight = 24;
-  const logoX = (W - logoWidth) / 2;
-  const logoY = margin + 5;
-  if (logoData) {
-    doc.addImage(logoData, "PNG", logoX, logoY, logoWidth, logoHeight);
-  }
+  const logoW = 60,
+    logoH = 24;
+  const logoX = (W - logoW) / 2,
+    logoY = margin + 5;
+  if (logoData) doc.addImage(logoData, "PNG", logoX, logoY, logoW, logoH);
 
-  // Title & Subtitle (pushed further down)
-  const gapAfterLogo = 12; // gap beneath logo
-  const titleY = logoY + logoHeight + gapAfterLogo;
+  // Title & subtitle (pushed down)
+  const titleY = logoY + logoH + 14; // more gap
   const subtitleY = titleY + 14;
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(30);
-  doc.setTextColor(33, 37, 41);
-  doc.text("CERTIFICATE OF ACHIEVEMENT", W / 2, titleY, {
-    align: "center",
-  });
+  doc.setFont("helvetica", "bold").setFontSize(30).setTextColor(33);
+  doc.text("CERTIFICATE OF ACHIEVEMENT", W / 2, titleY, { align: "center" });
 
-  // Underline
-  doc.setDrawColor("#666666");
-  doc.setLineWidth(0.5);
+  doc.setDrawColor("#666666").setLineWidth(0.5);
   doc.line(W / 2 - 70, titleY + 4, W / 2 + 70, titleY + 4);
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(14);
-  doc.setTextColor(80, 85, 100);
+  doc.setFont("helvetica", "normal").setFontSize(14).setTextColor(80);
   doc.text("3D Modeling Worktest Completion", W / 2, subtitleY, {
     align: "center",
   });
 
   // Body text
   let y = subtitleY + 20;
-  doc.setFontSize(16);
-  doc.setTextColor(100, 108, 120);
+  doc.setFontSize(16).setTextColor(100);
   doc.text("This is to certify that", W / 2, y, { align: "center" });
 
   y += 20;
-  doc.setFont("times", "bolditalic");
-  doc.setFontSize(36);
-  doc.setTextColor(21, 21, 21);
+  doc.setFont("times", "bolditalic").setFontSize(36).setTextColor(21);
   doc.text(data.candidateName, W / 2, y, { align: "center" });
 
   y += 10;
-  doc.setDrawColor(100, 108, 120);
-  doc.setLineWidth(0.7);
+  doc.setDrawColor(100).setLineWidth(0.7);
   doc.line(W / 2 - 60, y, W / 2 + 60, y);
 
   y += 15;
-  doc.setFont("times", "normal");
-  doc.setFontSize(16);
-  doc.setTextColor(33, 37, 41);
+  doc.setFont("times", "normal").setFontSize(16).setTextColor(33);
   doc.text(
-    `has successfully completed initial AI QA the ${data.worktestLevel} level`,
+    `has successfully completed the ${data.worktestLevel} level`,
     W / 2,
     y,
     { align: "center" }
   );
 
   y += 10;
-  doc.setFontSize(14);
-  doc.setTextColor(80, 85, 100);
-  doc.text("3D Modeling Worktest", W / 2, y, {
+  doc.setFontSize(14).setTextColor(80);
+  doc.text("3D Modeling Worktest with Outstanding Results", W / 2, y, {
     align: "center",
   });
 
-  // Instruction block
-  y += 40;
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(10);
-  doc.setTextColor(33, 37, 41);
+  // Instruction block (above footer)
+  const footerY = H - margin - 25;
+  const instructionY = footerY - 15;
+  doc.setFont("helvetica", "italic").setFontSize(12).setTextColor(33);
   doc.text(
     "Congratulations on passing the initial worktest! Please download this certificate and email it along with your exported .glb model to recruitment@charpstar.com for review.",
     W / 2,
-    y,
+    instructionY,
     { align: "center", maxWidth: W - margin * 2 }
   );
 
   // Footer
-  const footerY = H - margin - 25;
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(10);
-  doc.setTextColor(100, 108, 120);
+  doc.setFont("helvetica", "italic").setFontSize(10).setTextColor(100);
   doc.text(`Date: ${data.completionDate}`, margin + 10, footerY);
   doc.text(`Certificate ID: ${data.certificateId}`, margin + 10, footerY + 6);
 
   const sigX = W - margin - 60;
-  doc.setDrawColor(33, 37, 41);
-  doc.setLineWidth(0.5);
+  doc.setDrawColor(33).setLineWidth(0.5);
   doc.line(sigX, footerY, sigX + 50, footerY);
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(80, 85, 100);
+  doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(80);
   doc.text("Authorized Signatory", sigX + 25, footerY + 6, { align: "center" });
   doc.text("CharpstAR Team", sigX + 25, footerY + 12, { align: "center" });
 
