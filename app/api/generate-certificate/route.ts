@@ -166,7 +166,7 @@ async function generateCertificatePDF(data: {
   doc.setDrawColor(100).setLineWidth(0.7);
   doc.line(W / 2 - 60, y, W / 2 + 60, y);
 
-  y += 15;
+  y += 8;
   //   doc.setFont("times", "normal").setFontSize(16).setTextColor(33);
   //   doc.text(
   //     `has successfully completed the ${data.worktestLevel} level`,
