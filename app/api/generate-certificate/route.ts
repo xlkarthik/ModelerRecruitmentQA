@@ -229,7 +229,7 @@ async function generateCertificatePDF(data: {
       // Certificate ID
       doc
         .fontSize(10)
-        .font("fonts\Roboto-Regular.ttf-Bold")
+        .font("fontsRoboto-Regular.ttf")
         .text(`Certificate ID: ${data.certificateId}`, 60, footerY + 20);
 
       // Signature line
