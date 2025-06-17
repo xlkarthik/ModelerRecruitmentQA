@@ -139,7 +139,7 @@ async function generateCertificatePDF(data: {
   if (logoData) doc.addImage(logoData, "PNG", logoX, logoY, logoW, logoH);
 
   // Title & subtitle (pushed down)
-  const titleY = logoY + logoH + 16; // extra gap
+  const titleY = logoY + logoH + 18; // extra gap
   const subtitleY = titleY + 14;
 
   doc.setFont("helvetica", "bold").setFontSize(30).setTextColor(33);
@@ -181,9 +181,9 @@ async function generateCertificatePDF(data: {
     align: "center",
   });
 
-  // Instruction block (15mm above footer)
+  // Instruction block: place 30mm above footer
   const footerY = H - margin - 25;
-  const instructionY = footerY - 3;
+  const instructionY = footerY - 30;
   doc.setFont("helvetica", "italic").setFontSize(12).setTextColor(33);
   doc.text(
     "Congratulations on passing the initial worktest! Please download this certificate and email it along with your exported .glb model to recruitment@charpstar.com for review.",
