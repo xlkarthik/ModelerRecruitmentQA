@@ -145,28 +145,26 @@ async function generatePassPDF(data: {
   const subtitleY = titleY + 14;
 
   doc.setFont("helvetica", "bold").setFontSize(30).setTextColor(33);
-  const titleText = "WORKTEST CLEARANCE"; // or whatever heading you choose
-  doc
-    .setFont("helvetica", "bold")
-    .setFontSize(30)
-    .setTextColor(33)
-    .text(titleText, W / 2, titleY, { align: "center" });
+const titleText = "WORKTEST CLEARANCE";  // or whatever heading you choose
+doc.setFont("helvetica", "bold")
+   .setFontSize(30)
+   .setTextColor(33)
+   .text(titleText, W/2, titleY, { align: "center" });
 
-  // measure how wide it actually is
-  const textWidth = doc.getTextWidth(titleText);
+// measure how wide it actually is
+const textWidth = doc.getTextWidth(titleText);
 
-  // draw a 5 mm padding on each side, at ~3 mm below the baseline
-  const padding = 5;
-  const lineY = titleY + 3;
-  doc
-    .setDrawColor("#666666")
-    .setLineWidth(0.5)
-    .line(
-      W / 2 - textWidth / 2 - padding,
-      lineY,
-      W / 2 + textWidth / 2 + padding,
-      lineY
-    );
+// draw a 5 mm padding on each side, at ~3 mm below the baseline
+const padding = 5;
+const lineY = titleY + 3;  
+doc.setDrawColor("#666666")
+   .setLineWidth(0.5)
+   .line(
+     W/2 - textWidth/2 - padding,
+     lineY,
+     W/2 + textWidth/2 + padding,
+     lineY
+   );
   doc.text("3D Modeling Worktest Completion", W / 2, subtitleY, {
     align: "center",
   });
