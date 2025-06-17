@@ -145,12 +145,28 @@ async function generatePassPDF(data: {
   const subtitleY = titleY + 14;
 
   doc.setFont("helvetica", "bold").setFontSize(30).setTextColor(33);
-  doc.text("QA PASS", W / 2, titleY, { align: "center" });
+  const titleText = "WORKTEST CLEARANCE"; // or whatever heading you choose
+  doc
+    .setFont("helvetica", "bold")
+    .setFontSize(30)
+    .setTextColor(33)
+    .text(titleText, W / 2, titleY, { align: "center" });
 
-  doc.setDrawColor("#666666").setLineWidth(0.5);
-  doc.line(W / 2 - 30, titleY + 4, W / 2 + 50, titleY + 4);
+  // measure how wide it actually is
+  const textWidth = doc.getTextWidth(titleText);
 
-  doc.setFont("helvetica", "normal").setFontSize(14).setTextColor(80);
+  // draw a 5 mm padding on each side, at ~3 mm below the baseline
+  const padding = 5;
+  const lineY = titleY + 3;
+  doc
+    .setDrawColor("#666666")
+    .setLineWidth(0.5)
+    .line(
+      W / 2 - textWidth / 2 - padding,
+      lineY,
+      W / 2 + textWidth / 2 + padding,
+      lineY
+    );
   doc.text("3D Modeling Worktest Completion", W / 2, subtitleY, {
     align: "center",
   });
