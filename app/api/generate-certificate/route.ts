@@ -175,18 +175,18 @@ async function generateCertificatePDF(data: {
     { align: "center" }
   );
 
-//   y += 20;
-//   doc.setFontSize(14).setTextColor(80);
-//   doc.text("3D Modeling Worktest with Outstanding Results", W / 2, y, {
-//     align: "center",
-//   });
+  //   y += 20;
+  //   doc.setFontSize(14).setTextColor(80);
+  //   doc.text("3D Modeling Worktest with Outstanding Results", W / 2, y, {
+  //     align: "center",
+  //   });
 
   // Instruction block: place 30mm above footer
   const footerY = H - margin - 25;
   const instructionY = footerY - 30;
   doc.setFont("helvetica", "italic").setFontSize(12).setTextColor(33);
   doc.text(
-    "has successfully completed initial worktest! Please download this certificate and email it along with your exported .glb model to recruitment@charpstar.com for review.",
+    "has successfully completed the initial worktest! Please download this certificate and email it along with your exported .glb model to recruitment@charpstar.com for review.",
     W / 2,
     instructionY,
     { align: "center", maxWidth: W - margin * 2 }
