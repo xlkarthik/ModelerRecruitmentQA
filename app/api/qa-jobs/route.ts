@@ -485,6 +485,8 @@ Guidelines:
    • OVERALL: Weighted average considering all factors. Be conservative - only award high scores if model is extremely close to reference
    • SCORING SCALE: 98-100% = nearly perfect match, 90-97% = very close with only tiny differences, 75-89% = good match but clear differences visible, 50-74% = moderate similarity with significant differences, 25-49% = poor match with major differences, <25% = completely different
    ‼️ MANDATORY FORMAT ‼️: You MUST end your summary with this EXACT format: 'Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.' Replace X with actual numbers. This is REQUIRED.
+   
+‼️IMPORTANT‼️
    • If ALL scores are >40%, mark status as 'Approved', otherwise mark as 'Not Approved'.
 
 ‼️IMPORTANT‼️
