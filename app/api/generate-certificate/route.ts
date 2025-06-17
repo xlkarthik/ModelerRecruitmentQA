@@ -191,7 +191,8 @@ async function generatePassPDF(data: {
   doc.setFont("helvetica", "italic").setFontSize(12).setTextColor(33);
   const lines = [
     `has successfully submitted a 3D model that meets our basic technical requirements for human review!`,
-    `Please download this pass and email it along with your exported .glb model`,
+    `Next Steps: Please email this verification along with your .glb model to recruitment@charpstar.com for full evaluation by our team.
+`,
     `to recruitment@charpstar.com for further review.`,
   ];
 
