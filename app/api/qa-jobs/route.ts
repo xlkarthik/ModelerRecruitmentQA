@@ -256,6 +256,9 @@ type QAResults = {
   };
 };
 
+// Simple in-memory cache for QA results
+const qaResultsCache = new Map<string, any>();
+
 // Helper function to extract similarity scores and clean summary
 function extractSimilarityScores(summary: string) {
   const scores: any = {};
@@ -596,6 +599,10 @@ Output *only* a single valid JSON object, for example:
 
     console.log(`✅ Successfully updated job ${jobId} status to complete`);
     console.log(`Job ${jobId} completed successfully`);
+
+    // Store results in memory cache
+    qaResultsCache.set(jobId, qaResults);
+    console.log(`Stored QA results for job ${jobId} in cache`);
 
     return { jobId, status: "complete", qaResults };
   } catch (error: any) {
