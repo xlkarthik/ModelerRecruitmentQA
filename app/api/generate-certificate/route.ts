@@ -186,7 +186,7 @@ async function generateCertificatePDF(data: {
   const instructionY = footerY - 30;
   doc.setFont("helvetica", "italic").setFontSize(12).setTextColor(33);
   doc.text(
-    "Congratulations on passing the initial worktest! Please download this certificate and email it along with your exported .glb model to recruitment@charpstar.com for review.",
+    "on passing the initial worktest! Please download this certificate and email it along with your exported .glb model to recruitment@charpstar.com for review.",
     W / 2,
     instructionY,
     { align: "center", maxWidth: W - margin * 2 }
