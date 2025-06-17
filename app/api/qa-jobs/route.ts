@@ -224,7 +224,7 @@ export default function WorktestQA() {
 
       try {
         const response = await fetch(`/api/qa-jobs?jobId=${currentJobId}`);
-
+        
         if (!response.ok) {
           console.error(`Job status check failed: ${response.status}`);
           setError(`Failed to check job status: ${response.statusText}`);
@@ -240,27 +240,28 @@ export default function WorktestQA() {
 
         if (data.status === "complete") {
           console.log("🎉 Job completed! Stopping polling...");
-
+          
           if (data.qaResults) {
             console.log("📊 QA Results:", data.qaResults);
             setQaResults(data.qaResults);
           } else {
             console.warn("⚠️ No QA results in response");
           }
-
+          
           setQaComplete(true);
           setLoadingQA(false);
           isActive = false;
+          
         } else if (data.status === "failed") {
           console.error("❌ Job failed:", data.error);
           setError(data.error || "QA processing failed");
           setLoadingQA(false);
           isActive = false;
+          
         } else {
-          console.log(
-            `⏳ Job still ${data.status}, continuing... (${pollCount}/${maxPolls})`
-          );
+          console.log(`⏳ Job still ${data.status}, continuing... (${pollCount}/${maxPolls})`);
         }
+        
       } catch (err: any) {
         console.error("Error checking job status:", err);
         setError(`Failed to check job status: ${err.message}`);
@@ -573,9 +574,7 @@ export default function WorktestQA() {
       <body>
         <div class="certificate">
           <div class="header">
-            <img src="${
-              certificateData.companyLogo
-            }" alt="CharpstAR Logo" class="logo" />
+            <img src="${certificateData.companyLogo}" alt="CharpstAR Logo" class="logo" />
             <div class="title">CERTIFICATE OF ACHIEVEMENT</div>
             <div class="subtitle">3D Modeling Worktest Completion</div>
           </div>
@@ -585,35 +584,25 @@ export default function WorktestQA() {
             <div class="candidate-name">${certificateData.candidateName}</div>
             
             <div class="achievement">
-              has successfully completed the <span class="worktest-level">${
-                certificateData.worktestLevel
-              } Level</span><br/>
+              has successfully completed the <span class="worktest-level">${certificateData.worktestLevel} Level</span><br/>
               3D Modeling Worktest with outstanding results
             </div>
             
             <div class="scores">
               <div class="score-item">
-                <div class="score-value">${
-                  certificateData.similarityScores.silhouette || "N/A"
-                }%</div>
+                <div class="score-value">${certificateData.similarityScores.silhouette || 'N/A'}%</div>
                 <div class="score-label">Silhouette</div>
               </div>
               <div class="score-item">
-                <div class="score-value">${
-                  certificateData.similarityScores.proportion || "N/A"
-                }%</div>
+                <div class="score-value">${certificateData.similarityScores.proportion || 'N/A'}%</div>
                 <div class="score-label">Proportion</div>
               </div>
               <div class="score-item">
-                <div class="score-value">${
-                  certificateData.similarityScores.colorMaterial || "N/A"
-                }%</div>
+                <div class="score-value">${certificateData.similarityScores.colorMaterial || 'N/A'}%</div>
                 <div class="score-label">Color/Material</div>
               </div>
               <div class="score-item">
-                <div class="score-value">${
-                  certificateData.similarityScores.overall || "N/A"
-                }%</div>
+                <div class="score-value">${certificateData.similarityScores.overall || 'N/A'}%</div>
                 <div class="score-label">Overall</div>
               </div>
             </div>
@@ -622,9 +611,7 @@ export default function WorktestQA() {
           <div class="footer">
             <div>
               <div class="date">Date: ${certificateData.completionDate}</div>
-              <div class="certificate-id">Certificate ID: ${
-                certificateData.certificateId
-              }</div>
+              <div class="certificate-id">Certificate ID: ${certificateData.certificateId}</div>
             </div>
             <div class="signature">
               <div class="signature-line"></div>
@@ -637,14 +624,11 @@ export default function WorktestQA() {
     `;
 
     // Create and download the certificate
-    const blob = new Blob([certificateHTML], { type: "text/html" });
+    const blob = new Blob([certificateHTML], { type: 'text/html' });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = `CharpstAR_Certificate_${certificateData.candidateName.replace(
-      /\s+/g,
-      "_"
-    )}_${certificateData.worktestLevel}.html`;
+    a.download = `CharpstAR_Certificate_${certificateData.candidateName.replace(/\s+/g, '_')}_${certificateData.worktestLevel}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1245,9 +1229,8 @@ export default function WorktestQA() {
                       Congratulations! Your model has been approved.
                     </h3>
                     <p className="text-green-700 mt-1">
-                      Your 3D model meets all the required standards for the{" "}
-                      {selectedDifficulty} worktest. You can now generate your
-                      certificate of completion.
+                      Your 3D model meets all the required standards for the {selectedDifficulty} worktest. 
+                      You can now generate your certificate of completion.
                     </p>
                   </div>
                 </div>
@@ -1260,12 +1243,11 @@ export default function WorktestQA() {
                 </h3>
                 <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
                   <p className="text-red-700">
-                    Your model did not meet the approval criteria. Please review
-                    the detailed feedback below and make the necessary
-                    adjustments before resubmitting.
+                    Your model did not meet the approval criteria. Please review the detailed feedback below 
+                    and make the necessary adjustments before resubmitting.
                   </p>
                 </div>
-
+                
                 {qaResults?.differences && qaResults.differences.length > 0 && (
                   <div className="space-y-4">
                     {qaResults.differences.map((diff, index) => (
@@ -1543,8 +1525,7 @@ export default function WorktestQA() {
                   🎉 Generate Your Certificate
                 </h3>
                 <p className="text-green-700 mb-4">
-                  Your model has been approved! Enter your name below to
-                  generate your certificate of completion.
+                  Your model has been approved! Enter your name below to generate your certificate of completion.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <input
@@ -1570,10 +1551,8 @@ export default function WorktestQA() {
                   Model Requires Improvements
                 </h3>
                 <p className="text-red-700">
-                  Please review the issues listed above and make the necessary
-                  adjustments to your 3D model. Once you've addressed these
-                  concerns, you can upload your improved model for
-                  re-evaluation.
+                  Please review the issues listed above and make the necessary adjustments to your 3D model. 
+                  Once you've addressed these concerns, you can upload your improved model for re-evaluation.
                 </p>
               </div>
             )}
@@ -1608,8 +1587,7 @@ export default function WorktestQA() {
                     Certificate Ready!
                   </h3>
                   <p className="text-gray-600 mb-6">
-                    Your certificate has been generated successfully. Click the
-                    button below to download it.
+                    Your certificate has been generated successfully. Click the button below to download it.
                   </p>
                   <div className="flex flex-col gap-3">
                     <button
@@ -1631,32 +1609,27 @@ export default function WorktestQA() {
           )}
 
           {/* Additional Info */}
-          <div
-            className={`mt-6 p-4 rounded-lg ${
-              qaResults?.status === "Approved" ? "bg-green-50" : "bg-blue-50"
-            }`}
-          >
-            <h3
-              className={`font-semibold mb-2 ${
-                qaResults?.status === "Approved"
-                  ? "text-green-900"
-                  : "text-blue-900"
-              }`}
-            >
-              {qaResults?.status === "Approved"
-                ? "Congratulations!"
-                : "Next Steps"}
+          <div className={`mt-6 p-4 rounded-lg ${
+            qaResults?.status === "Approved" 
+              ? "bg-green-50" 
+              : "bg-blue-50"
+          }`}>
+            <h3 className={`font-semibold mb-2 ${
+              qaResults?.status === "Approved" 
+                ? "text-green-900" 
+                : "text-blue-900"
+            }`}>
+              {qaResults?.status === "Approved" ? "Congratulations!" : "Next Steps"}
             </h3>
-            <p
-              className={`text-sm ${
-                qaResults?.status === "Approved"
-                  ? "text-green-800"
-                  : "text-blue-800"
-              }`}
-            >
-              {qaResults?.status === "Approved"
+            <p className={`text-sm ${
+              qaResults?.status === "Approved" 
+                ? "text-green-800" 
+                : "text-blue-800"
+            }`}>
+              {qaResults?.status === "Approved" 
                 ? `Excellent work! Your ${selectedDifficulty} level worktest model meets all requirements. Download your certificate to showcase your 3D modeling skills.`
-                : `Your model has been analyzed against the ${selectedDifficulty} worktest requirements. Review the feedback above to understand what needs improvement. You can test your updated model anytime.`}
+                : `Your model has been analyzed against the ${selectedDifficulty} worktest requirements. Review the feedback above to understand what needs improvement. You can test your updated model anytime.`
+              }
             </p>
           </div>
         </div>
