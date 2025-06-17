@@ -124,7 +124,7 @@ async function generateCertificatePDF(data: {
 
       doc
         .fontSize(18)
-        .font("fontsRoboto-Regular.ttf")
+        .font("fonts\\Roboto-Regular.ttf-Bold")
         .text("3D Modeling Worktest Completion", 60, 85, {
           align: "center",
           width: 722,
@@ -136,7 +136,7 @@ async function generateCertificatePDF(data: {
       // "This is to certify that"
       doc
         .fontSize(16)
-        .font("fontsRoboto-Regular.ttf")
+        .font("fonts\\Roboto-Regular.ttf-Bold")
         .text("This is to certify that", 60, 200, {
           align: "center",
           width: 722,
@@ -145,13 +145,13 @@ async function generateCertificatePDF(data: {
       // Candidate name (large)
       doc
         .fontSize(42)
-        .font("fontsRoboto-Regular.ttf")
+        .font("fonts\\Roboto-Regular.ttf-Bold")
         .text(data.candidateName, 60, 230, { align: "center", width: 722 });
 
       // Achievement text
       doc
         .fontSize(20)
-        .font("fontsRoboto-Regular.ttf")
+        .font("fonts\\Roboto-Regular.ttf-Bold")
         .text(
           `has successfully completed the ${data.worktestLevel} LEVEL`,
           60,
@@ -209,7 +209,7 @@ async function generateCertificatePDF(data: {
         doc
           .fillColor(lightGray)
           .fontSize(12)
-          .font("fontsRoboto-Regular.ttf")
+          .font("fonts\\Roboto-Regular.ttf-Bold")
           .text(score.label.toUpperCase(), x, scoresY + 35, {
             align: "center",
             width: scoreWidth,
@@ -223,13 +223,13 @@ async function generateCertificatePDF(data: {
       doc
         .fillColor(lightGray)
         .fontSize(14)
-        .font("fontsRoboto-Regular.ttf")
+        .font("fonts\\Roboto-Regular.ttf-Bold")
         .text(`Date: ${data.completionDate}`, 60, footerY);
 
       // Certificate ID
       doc
         .fontSize(10)
-        .font("fontsRoboto-Regular.ttf")
+        .font("fonts\\Roboto-Regular.ttf-Bold")
         .text(`Certificate ID: ${data.certificateId}`, 60, footerY + 20);
 
       // Signature line
@@ -240,7 +240,7 @@ async function generateCertificatePDF(data: {
 
       doc
         .fontSize(12)
-        .font("fontsRoboto-Regular.ttf")
+        .font("fonts\\Roboto-Regular.ttf-Bold")
         .text("CharpstAR Team", 600, footerY + 40, {
           align: "center",
           width: 180,
