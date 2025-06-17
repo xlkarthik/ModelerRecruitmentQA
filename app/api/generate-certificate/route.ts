@@ -145,7 +145,7 @@ async function generateCertificatePDF(data: {
       // Candidate name (large)
       doc
         .fontSize(42)
-        .font("Helvetica-Bold")
+        .font("fonts")
         .text(data.candidateName, 60, 230, { align: "center", width: 722 });
 
       // Achievement text
