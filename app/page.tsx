@@ -1175,9 +1175,11 @@ export default function WorktestQA() {
                   <h2 className="text-xl font-semibold text-gray-900">
                     QA Results
                   </h2>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {qaResults?.summary || "Analysis complete"}
-                  </p>
+                  {qaResults?.summary && (
+                    <p className="text-gray-700 mt-2 text-base">
+                      {qaResults.summary}
+                    </p>
+                  )}
                 </div>
                 <div className="text-right">
                   <div
