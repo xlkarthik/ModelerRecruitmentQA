@@ -196,7 +196,7 @@ async function generateCertificatePDF(data: {
   y += 10;
   doc.setFontSize(14);
   doc.setTextColor(80, 85, 100);
-  doc.text("3D Modeling Worktest with Outstanding Results", W / 2, y, {
+  doc.text("3D Modeling Worktest", W / 2, y, {
     align: "center",
   });
 
