@@ -116,7 +116,7 @@ async function generateCertificatePDF(data: {
       doc
         .fillColor("white")
         .fontSize(36)
-        .font("fontsRoboto-Regular.ttf-Bold-Bold")
+        .font("fontsRoboto-Regular.ttf-Bold")
         .text("CERTIFICATE OF ACHIEVEMENT", 60, 40, {
           align: "center",
           width: 722,
@@ -124,7 +124,7 @@ async function generateCertificatePDF(data: {
 
       doc
         .fontSize(18)
-        .font("fontsRoboto-Regular.ttf-Bold")
+        .font("fontsRoboto-Regular.ttf")
         .text("3D Modeling Worktest Completion", 60, 85, {
           align: "center",
           width: 722,
@@ -136,7 +136,7 @@ async function generateCertificatePDF(data: {
       // "This is to certify that"
       doc
         .fontSize(16)
-        .font("fontsRoboto-Regular.ttf-Bold")
+        .font("fontsRoboto-Regular.ttf")
         .text("This is to certify that", 60, 200, {
           align: "center",
           width: 722,
@@ -145,7 +145,7 @@ async function generateCertificatePDF(data: {
       // Candidate name (large)
       doc
         .fontSize(42)
-        .font("fontsRoboto-Regular.ttf-Bold")
+        .font("fontsRoboto-Regular.ttf")
         .text(data.candidateName, 60, 230, { align: "center", width: 722 });
 
       // Achievement text
@@ -250,7 +250,7 @@ async function generateCertificatePDF(data: {
       doc
         .fillColor(primaryBlue)
         .fontSize(24)
-        .font("fontsRoboto-Regular.ttf-Bold-Bold")
+        .font("fonts\Roboto-Regular.ttf-Bold-Bold")
         .text("CharpstAR", 60, footerY + 20);
 
       doc.end();
