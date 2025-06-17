@@ -173,7 +173,7 @@ async function generatePassPDF(data: {
   });
 
   // Body text
-  let y = subtitleY + 10;
+  let y = subtitleY + 15;
   doc.setFontSize(16).setTextColor(100);
   doc.text("This is to certify that", W / 2, y, { align: "center" });
 
