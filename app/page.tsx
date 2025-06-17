@@ -1266,8 +1266,21 @@ export default function WorktestQA() {
                   </p>
                 </div>
 
+                {/* QA Summary */}
+                {qaResults?.summary && (
+                  <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                    <h4 className="font-medium text-blue-800 mb-2">
+                      QA Analysis Summary
+                    </h4>
+                    <p className="text-blue-700">{qaResults.summary}</p>
+                  </div>
+                )}
+
                 {qaResults?.differences && qaResults.differences.length > 0 && (
                   <div className="space-y-4">
+                    <h4 className="font-medium text-gray-800">
+                      Detailed Issues:
+                    </h4>
                     {qaResults.differences.map((diff, index) => (
                       <div
                         key={index}
