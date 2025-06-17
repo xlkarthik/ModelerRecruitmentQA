@@ -120,29 +120,29 @@ async function generateCertificatePDF(data: {
   const H = doc.internal.pageSize.getHeight();
   const margin = 20;
 
-  // ── Outer border ─────────────────────────────────────────────
+  // Outer border
   doc.setDrawColor("#CCCCCC");
   doc.setLineWidth(1);
   doc.rect(margin, margin, W - margin * 2, H - margin * 2);
 
-  // ── Header background wash (taller to fit larger logo + gap) ─
+  // Header background wash (taller to fit larger logo + gap)
   doc.setFillColor(245, 245, 245);
   doc.rect(margin + 1, margin + 1, W - (margin + 1) * 2, 70, "F");
 
-  // ── Logo (wider, centered at top) ───────────────────────────
+  // Logo (wider, centered at top)
   const logoData = await getImageAsBase64(
     "https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
   );
-  const logoWidth = 70;
-  const logoHeight = 20;
+  const logoWidth = 60;
+  const logoHeight = 24;
   const logoX = (W - logoWidth) / 2;
   const logoY = margin + 5;
   if (logoData) {
     doc.addImage(logoData, "PNG", logoX, logoY, logoWidth, logoHeight);
   }
 
-  // ── Title & Subtitle (pushed further down) ──────────────────
-  const gapAfterLogo = 12; // increased gap
+  // Title & Subtitle (pushed further down)
+  const gapAfterLogo = 12; // gap beneath logo
   const titleY = logoY + logoHeight + gapAfterLogo;
   const subtitleY = titleY + 14;
 
@@ -165,8 +165,8 @@ async function generateCertificatePDF(data: {
     align: "center",
   });
 
-  // ── Body text ────────────────────────────────────────────────
-  let y = subtitleY + 26;
+  // Body text
+  let y = subtitleY + 20;
   doc.setFontSize(16);
   doc.setTextColor(100, 108, 120);
   doc.text("This is to certify that", W / 2, y, { align: "center" });
@@ -196,11 +196,23 @@ async function generateCertificatePDF(data: {
   y += 10;
   doc.setFontSize(14);
   doc.setTextColor(80, 85, 100);
-  doc.text("3D Modeling Worktest", W / 2, y, {
+  doc.text("3D Modeling Worktest with Outstanding Results", W / 2, y, {
     align: "center",
   });
 
-  // ── Footer ───────────────────────────────────────────────────
+  // Instruction block
+  y += 30;
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(12);
+  doc.setTextColor(33, 37, 41);
+  doc.text(
+    "Congratulations on passing the initial worktest! Please download this certificate and email it along with your exported .glb model to recruitment@charpstar.com for review.",
+    W / 2,
+    y,
+    { align: "center", maxWidth: W - margin * 2 }
+  );
+
+  // Footer
   const footerY = H - margin - 25;
   doc.setFont("helvetica", "italic");
   doc.setFontSize(10);
@@ -216,9 +228,7 @@ async function generateCertificatePDF(data: {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.setTextColor(80, 85, 100);
-  doc.text("Authorized Signatory", sigX + 25, footerY + 6, {
-    align: "center",
-  });
+  doc.text("Authorized Signatory", sigX + 25, footerY + 6, { align: "center" });
   doc.text("CharpstAR Team", sigX + 25, footerY + 12, { align: "center" });
 
   return Buffer.from(doc.output("arraybuffer"));
