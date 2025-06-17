@@ -95,9 +95,9 @@ function generateCertificatePDF(data: {
 }): Buffer {
   // Create PDF in landscape mode
   const doc = new jsPDF({
-    orientation: "landscape",
-    unit: "mm",
-    format: "a4",
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a4'
   });
 
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -111,45 +111,33 @@ function generateCertificatePDF(data: {
 
   // Header background
   doc.setFillColor(primaryBlue.r, primaryBlue.g, primaryBlue.b);
-  doc.rect(0, 0, pageWidth, 50, "F");
+  doc.rect(0, 0, pageWidth, 50, 'F');
 
   // Title
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(24);
-  doc.text("CERTIFICATE OF ACHIEVEMENT", pageWidth / 2, 20, {
-    align: "center",
-  });
-
+  doc.text('CERTIFICATE OF ACHIEVEMENT', pageWidth / 2, 20, { align: 'center' });
+  
   doc.setFontSize(14);
-  doc.text("3D Modeling Worktest Completion", pageWidth / 2, 35, {
-    align: "center",
-  });
+  doc.text('3D Modeling Worktest Completion', pageWidth / 2, 35, { align: 'center' });
 
   // Main content
   doc.setTextColor(darkGray.r, darkGray.g, darkGray.b);
-
+  
   // "This is to certify that"
   doc.setFontSize(12);
-  doc.text("This is to certify that", pageWidth / 2, 70, { align: "center" });
+  doc.text('This is to certify that', pageWidth / 2, 70, { align: 'center' });
 
   // Candidate name
   doc.setFontSize(28);
-  doc.text(data.candidateName, pageWidth / 2, 90, { align: "center" });
+  doc.text(data.candidateName, pageWidth / 2, 90, { align: 'center' });
 
   // Achievement text
   doc.setFontSize(16);
-  doc.text(
-    `has successfully completed the ${data.worktestLevel} LEVEL`,
-    pageWidth / 2,
-    110,
-    { align: "center" }
-  );
-  doc.text(
-    "3D Modeling Worktest with outstanding results",
-    pageWidth / 2,
-    125,
-    { align: "center" }
-  );
+  doc.text(`has successfully completed the ${data.worktestLevel} LEVEL`, pageWidth / 2, 110, { align: 'center' });
+  doc.text('3D Modeling Worktest with outstanding results', pageWidth / 2, 125, { align: 'center' });
+
+
 
   // Footer
   doc.setTextColor(lightGray.r, lightGray.g, lightGray.b);
@@ -161,14 +149,14 @@ function generateCertificatePDF(data: {
   // Signature area
   doc.line(200, 155, 250, 155);
   doc.setFontSize(10);
-  doc.text("CharpstAR Team", 225, 165, { align: "center" });
+  doc.text('CharpstAR Team', 225, 165, { align: 'center' });
 
   // Company name
   doc.setTextColor(primaryBlue.r, primaryBlue.g, primaryBlue.b);
   doc.setFontSize(16);
-  doc.text("CharpstAR", 20, 165);
+  doc.text('CharpstAR', 20, 165);
 
   // Return as buffer
-  const pdfOutput = doc.output("arraybuffer");
+  const pdfOutput = doc.output('arraybuffer');
   return Buffer.from(pdfOutput);
 }
