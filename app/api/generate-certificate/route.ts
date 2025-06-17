@@ -201,7 +201,7 @@ async function generateCertificatePDF(data: {
   });
 
   // Instruction block
-  y += 30;
+  y += 40;
   doc.setFont("helvetica", "italic");
   doc.setFontSize(12);
   doc.setTextColor(33, 37, 41);
