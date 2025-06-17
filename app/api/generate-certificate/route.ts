@@ -194,7 +194,7 @@ async function generateCertificatePDF(data: {
   doc.text(instructionLines, W / 2, instructionY, {
     align: "center",
     maxWidth: W - margin * 2,
-    lineHeightFactor: 1.2,
+    lineHeightFactor: 1.5,
   });
 
   // Footer
