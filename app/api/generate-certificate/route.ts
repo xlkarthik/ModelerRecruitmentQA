@@ -1,7 +1,9 @@
+// First install: npm install jspdf
+
 // app/api/generate-certificate/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "../../../lib/supabase";
-import PDFDocument from "pdfkit";
+import { jsPDF } from "jspdf";
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate PDF certificate
-    const pdfBuffer = await generateCertificatePDF({
+    const pdfBuffer = generateCertificatePDF({
       candidateName,
       worktestLevel: worktestLevel.toUpperCase(),
       completionDate: new Date().toLocaleDateString("en-GB", {
@@ -83,162 +85,121 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function generateCertificatePDF(data: {
+function generateCertificatePDF(data: {
   candidateName: string;
   worktestLevel: string;
   completionDate: string;
   jobId: string;
   certificateId: string;
   similarityScores: any;
-}): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    try {
-      const doc = new PDFDocument({
-        size: [842, 595], // A4 landscape
-        margins: { top: 60, bottom: 60, left: 60, right: 60 },
-      });
-
-      const buffers: Buffer[] = [];
-      doc.on("data", buffers.push.bind(buffers));
-      doc.on("end", () => resolve(Buffer.concat(buffers)));
-      doc.on("error", reject);
-
-      // Colors
-      const primaryBlue = "#667eea";
-      const darkGray = "#2d3748";
-      const lightGray = "#718096";
-      const green = "#38a169";
-
-      // Header with background
-      doc.rect(0, 0, 842, 150).fill(primaryBlue);
-
-      // Title - using only built-in default font
-      doc
-        .fillColor("white")
-        .fontSize(36)
-        .text("CERTIFICATE OF ACHIEVEMENT", 60, 40, {
-          align: "center",
-          width: 722,
-        });
-
-      doc.fontSize(18).text("3D Modeling Worktest Completion", 60, 85, {
-        align: "center",
-        width: 722,
-      });
-
-      // Main content area
-      doc.fillColor(darkGray);
-
-      // "This is to certify that"
-      doc.fontSize(16).text("This is to certify that", 60, 200, {
-        align: "center",
-        width: 722,
-      });
-
-      // Candidate name (large)
-      doc
-        .fontSize(42)
-        .text(data.candidateName, 60, 230, { align: "center", width: 722 });
-
-      // Achievement text
-      doc
-        .fontSize(20)
-        .text(
-          `has successfully completed the ${data.worktestLevel} LEVEL`,
-          60,
-          290,
-          { align: "center", width: 722 }
-        );
-
-      doc.text("3D Modeling Worktest with outstanding results", 60, 320, {
-        align: "center",
-        width: 722,
-      });
-
-      // Scores section
-      const scoresY = 380;
-      const scoreWidth = 150;
-      const scoreSpacing = 180;
-      const startX =
-        60 + (722 - (4 * scoreWidth + 3 * (scoreSpacing - scoreWidth))) / 2;
-
-      const scores = [
-        {
-          label: "Silhouette",
-          value: data.similarityScores.silhouette || "N/A",
-        },
-        {
-          label: "Proportion",
-          value: data.similarityScores.proportion || "N/A",
-        },
-        {
-          label: "Color/Material",
-          value: data.similarityScores.colorMaterial || "N/A",
-        },
-        { label: "Overall", value: data.similarityScores.overall || "N/A" },
-      ];
-
-      scores.forEach((score, index) => {
-        const x = startX + index * scoreSpacing;
-
-        // Score value
-        doc
-          .fillColor(green)
-          .fontSize(24)
-          .text(
-            `${score.value}${typeof score.value === "number" ? "%" : ""}`,
-            x,
-            scoresY,
-            {
-              align: "center",
-              width: scoreWidth,
-            }
-          );
-
-        // Score label
-        doc
-          .fillColor(lightGray)
-          .fontSize(12)
-          .text(score.label.toUpperCase(), x, scoresY + 35, {
-            align: "center",
-            width: scoreWidth,
-          });
-      });
-
-      // Footer section
-      const footerY = 480;
-
-      // Date
-      doc
-        .fillColor(lightGray)
-        .fontSize(14)
-        .text(`Date: ${data.completionDate}`, 60, footerY);
-
-      // Certificate ID
-      doc
-        .fontSize(10)
-        .text(`Certificate ID: ${data.certificateId}`, 60, footerY + 20);
-
-      // Signature line
-      doc
-        .moveTo(600, footerY + 30)
-        .lineTo(780, footerY + 30)
-        .stroke();
-
-      doc.fontSize(12).text("CharpstAR Team", 600, footerY + 40, {
-        align: "center",
-        width: 180,
-      });
-
-      // Company logo area (text for now)
-      doc
-        .fillColor(primaryBlue)
-        .fontSize(24)
-        .text("CharpstAR", 60, footerY + 20);
-
-      doc.end();
-    } catch (error) {
-      reject(error);
-    }
+}): Buffer {
+  // Create PDF in landscape mode
+  const doc = new jsPDF({
+    orientation: "landscape",
+    unit: "mm",
+    format: "a4",
   });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // Colors (jsPDF uses RGB values 0-255)
+  const primaryBlue = [102, 126, 234];
+  const darkGray = [45, 55, 72];
+  const lightGray = [113, 128, 150];
+  const green = [56, 161, 105];
+
+  // Header background
+  doc.setFillColor(...primaryBlue);
+  doc.rect(0, 0, pageWidth, 50, "F");
+
+  // Title
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(24);
+  doc.text("CERTIFICATE OF ACHIEVEMENT", pageWidth / 2, 20, {
+    align: "center",
+  });
+
+  doc.setFontSize(14);
+  doc.text("3D Modeling Worktest Completion", pageWidth / 2, 35, {
+    align: "center",
+  });
+
+  // Main content
+  doc.setTextColor(...darkGray);
+
+  // "This is to certify that"
+  doc.setFontSize(12);
+  doc.text("This is to certify that", pageWidth / 2, 70, { align: "center" });
+
+  // Candidate name
+  doc.setFontSize(28);
+  doc.text(data.candidateName, pageWidth / 2, 90, { align: "center" });
+
+  // Achievement text
+  doc.setFontSize(16);
+  doc.text(
+    `has successfully completed the ${data.worktestLevel} LEVEL`,
+    pageWidth / 2,
+    110,
+    { align: "center" }
+  );
+  doc.text(
+    "3D Modeling Worktest with outstanding results",
+    pageWidth / 2,
+    125,
+    { align: "center" }
+  );
+
+  // Scores section
+  const scores = [
+    { label: "Silhouette", value: data.similarityScores.silhouette || "N/A" },
+    { label: "Proportion", value: data.similarityScores.proportion || "N/A" },
+    {
+      label: "Color/Material",
+      value: data.similarityScores.colorMaterial || "N/A",
+    },
+    { label: "Overall", value: data.similarityScores.overall || "N/A" },
+  ];
+
+  const startX = 60;
+  const spacing = 45;
+
+  scores.forEach((score, index) => {
+    const x = startX + index * spacing;
+
+    // Score value
+    doc.setTextColor(...green);
+    doc.setFontSize(18);
+    const displayValue = `${score.value}${
+      typeof score.value === "number" ? "%" : ""
+    }`;
+    doc.text(displayValue, x, 150, { align: "center" });
+
+    // Score label
+    doc.setTextColor(...lightGray);
+    doc.setFontSize(8);
+    doc.text(score.label.toUpperCase(), x, 160, { align: "center" });
+  });
+
+  // Footer
+  doc.setTextColor(...lightGray);
+  doc.setFontSize(10);
+  doc.text(`Date: ${data.completionDate}`, 20, 180);
+  doc.setFontSize(8);
+  doc.text(`Certificate ID: ${data.certificateId}`, 20, 190);
+
+  // Signature area
+  doc.line(200, 185, 250, 185);
+  doc.setFontSize(10);
+  doc.text("CharpstAR Team", 225, 195, { align: "center" });
+
+  // Company name
+  doc.setTextColor(...primaryBlue);
+  doc.setFontSize(16);
+  doc.text("CharpstAR", 20, 195);
+
+  // Return as buffer
+  const pdfOutput = doc.output("arraybuffer");
+  return Buffer.from(pdfOutput);
 }
