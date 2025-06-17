@@ -112,46 +112,37 @@ async function generateCertificatePDF(data: {
       // Header with gradient background
       doc.rect(0, 0, 842, 150).fill(primaryBlue);
 
-      // Title
+      // Title - using default fonts only
       doc
         .fillColor("white")
         .fontSize(36)
-        .font("Helvetica-Bold")
         .text("CERTIFICATE OF ACHIEVEMENT", 60, 40, {
           align: "center",
           width: 722,
         });
 
-      doc
-        .fontSize(18)
-        .font("Helvetica")
-        .text("3D Modeling Worktest Completion", 60, 85, {
-          align: "center",
-          width: 722,
-        });
+      doc.fontSize(18).text("3D Modeling Worktest Completion", 60, 85, {
+        align: "center",
+        width: 722,
+      });
 
       // Main content area
       doc.fillColor(darkGray);
 
       // "This is to certify that"
-      doc
-        .fontSize(16)
-        .font("Helvetica")
-        .text("This is to certify that", 60, 200, {
-          align: "center",
-          width: 722,
-        });
+      doc.fontSize(16).text("This is to certify that", 60, 200, {
+        align: "center",
+        width: 722,
+      });
 
       // Candidate name (large)
       doc
         .fontSize(42)
-        .font("Helvetica-Bold")
         .text(data.candidateName, 60, 230, { align: "center", width: 722 });
 
       // Achievement text
       doc
         .fontSize(20)
-        .font("Helvetica")
         .text(
           `has successfully completed the ${data.worktestLevel} LEVEL`,
           60,
@@ -194,7 +185,6 @@ async function generateCertificatePDF(data: {
         doc
           .fillColor(green)
           .fontSize(24)
-          .font("Helvetica-Bold")
           .text(
             `${score.value}${typeof score.value === "number" ? "%" : ""}`,
             x,
@@ -209,7 +199,6 @@ async function generateCertificatePDF(data: {
         doc
           .fillColor(lightGray)
           .fontSize(12)
-          .font("Helvetica")
           .text(score.label.toUpperCase(), x, scoresY + 35, {
             align: "center",
             width: scoreWidth,
@@ -223,13 +212,11 @@ async function generateCertificatePDF(data: {
       doc
         .fillColor(lightGray)
         .fontSize(14)
-        .font("Helvetica")
         .text(`Date: ${data.completionDate}`, 60, footerY);
 
       // Certificate ID
       doc
         .fontSize(10)
-        .font("Helvetica")
         .text(`Certificate ID: ${data.certificateId}`, 60, footerY + 20);
 
       // Signature line
@@ -238,19 +225,15 @@ async function generateCertificatePDF(data: {
         .lineTo(780, footerY + 30)
         .stroke();
 
-      doc
-        .fontSize(12)
-        .font("Helvetica")
-        .text("CharpstAR Team", 600, footerY + 40, {
-          align: "center",
-          width: 180,
-        });
+      doc.fontSize(12).text("CharpstAR Team", 600, footerY + 40, {
+        align: "center",
+        width: 180,
+      });
 
       // Company logo area (text for now)
       doc
         .fillColor(primaryBlue)
         .fontSize(24)
-        .font("Helvetica-Bold")
         .text("CharpstAR", 60, footerY + 20);
 
       doc.end();
