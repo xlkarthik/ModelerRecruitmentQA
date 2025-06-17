@@ -169,7 +169,7 @@ function generateCertificatePDF(data: {
     const x = startX + index * spacing;
 
     // Score value
-    doc.setTextColor(...green);
+    doc.setTextColor(green.r, green.g, green.b);
     doc.setFontSize(18);
     const displayValue = `${score.value}${
       typeof score.value === "number" ? "%" : ""
@@ -177,13 +177,13 @@ function generateCertificatePDF(data: {
     doc.text(displayValue, x, 150, { align: "center" });
 
     // Score label
-    doc.setTextColor(...lightGray);
+    doc.setTextColor(lightGray.r, lightGray.g, lightGray.b);
     doc.setFontSize(8);
     doc.text(score.label.toUpperCase(), x, 160, { align: "center" });
   });
 
   // Footer
-  doc.setTextColor(...lightGray);
+  doc.setTextColor(lightGray.r, lightGray.g, lightGray.b);
   doc.setFontSize(10);
   doc.text(`Date: ${data.completionDate}`, 20, 180);
   doc.setFontSize(8);
@@ -195,7 +195,7 @@ function generateCertificatePDF(data: {
   doc.text("CharpstAR Team", 225, 195, { align: "center" });
 
   // Company name
-  doc.setTextColor(...primaryBlue);
+  doc.setTextColor(primaryBlue.r, primaryBlue.g, primaryBlue.b);
   doc.setFontSize(16);
   doc.text("CharpstAR", 20, 195);
 
