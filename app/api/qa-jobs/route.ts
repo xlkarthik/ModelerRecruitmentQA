@@ -56,7 +56,11 @@ class QAJobQueue {
       retryCount: 0,
     });
 
-    await supabase.from("qa_jobs").update({ status: "queued" }).eq("id", jobId);
+    await supabase
+      .from("qa_jobs")
+      .update({ status: "queued" })
+      .eq("id", jobId)
+      .select();
     this.processQueue();
   }
 
@@ -411,10 +415,18 @@ async function processQAJob(
   const tmpDir = path.join("/tmp", jobId);
 
   try {
-    await supabase
+    const { error: statusError } = await supabase
       .from("qa_jobs")
       .update({ status: "processing" })
       .eq("id", jobId);
+
+    if (statusError) {
+      console.error(
+        `Failed to update job ${jobId} to processing:`,
+        statusError
+      );
+      throw new Error(`Failed to update job status: ${statusError.message}`);
+    }
 
     if (fs.existsSync(tmpDir))
       fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -549,16 +561,31 @@ Output *only* a single valid JSON object, for example:
     // Extract similarity scores from summary
     qaResults.similarityScores = extractSimilarityScores(qaResults.summary);
 
-    // Store QA results in database - NO PDF GENERATION
-    await supabase
+    // Store QA results in database with proper error handling
+    const { data: updateData, error: updateError } = await supabase
       .from("qa_jobs")
       .update({
         qa_results: JSON.stringify(qaResults),
         status: "complete",
-        end_time: new Date(),
+        end_time: new Date().toISOString(),
       })
-      .eq("id", jobId);
+      .eq("id", jobId)
+      .select(); // Add select to get the updated row back
 
+    if (updateError) {
+      console.error(
+        `❌ Failed to update job ${jobId} in database:`,
+        updateError
+      );
+      throw new Error(`Database update failed: ${updateError.message}`);
+    }
+
+    if (!updateData || updateData.length === 0) {
+      console.error(`❌ No rows updated for job ${jobId} - job may not exist`);
+      throw new Error(`Job ${jobId} not found in database`);
+    }
+
+    console.log(`✅ Successfully updated job ${jobId} status to complete`);
     console.log(`Job ${jobId} completed successfully`);
     return { jobId, status: "complete", qaResults };
   } catch (error: any) {
@@ -628,21 +655,34 @@ export async function POST(request: NextRequest) {
     }
 
     const jobId = uuidv4();
-    const { error: insertError } = await supabase.from("qa_jobs").insert([
-      {
-        id: jobId,
-        status: "pending",
-        start_time: new Date(),
-      },
-    ]);
+    const { data: insertData, error: insertError } = await supabase
+      .from("qa_jobs")
+      .insert([
+        {
+          id: jobId,
+          status: "pending",
+          start_time: new Date().toISOString(),
+        },
+      ])
+      .select();
 
     if (insertError) {
       console.error("Failed to create job:", insertError);
       return NextResponse.json(
-        { error: "Failed to create job" },
+        { error: `Failed to create job: ${insertError.message}` },
         { status: 500 }
       );
     }
+
+    if (!insertData || insertData.length === 0) {
+      console.error("No job created - insert returned empty");
+      return NextResponse.json(
+        { error: "Failed to create job - no data returned" },
+        { status: 500 }
+      );
+    }
+
+    console.log(`✅ Created job ${jobId} in database`);
 
     const queue = QAJobQueue.getInstance();
 
