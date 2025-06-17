@@ -175,11 +175,11 @@ async function generateCertificatePDF(data: {
     { align: "center" }
   );
 
-  y += 20;
-  doc.setFontSize(14).setTextColor(80);
-  doc.text("3D Modeling Worktest with Outstanding Results", W / 2, y, {
-    align: "center",
-  });
+//   y += 20;
+//   doc.setFontSize(14).setTextColor(80);
+//   doc.text("3D Modeling Worktest with Outstanding Results", W / 2, y, {
+//     align: "center",
+//   });
 
   // Instruction block: place 30mm above footer
   const footerY = H - margin - 25;
