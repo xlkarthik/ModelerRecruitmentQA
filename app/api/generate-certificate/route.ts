@@ -194,7 +194,7 @@ async function generateCertificatePDF(data: {
     lineHeightFactor: 1.5,
   });
   // Instruction block: place 30mm above footer
-  const footerY = H - margin - 35;
+  const footerY = H - margin - 25;
   const instructionY = footerY - 20;
 
   // Footer
