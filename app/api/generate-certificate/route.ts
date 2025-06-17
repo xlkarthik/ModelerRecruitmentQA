@@ -187,7 +187,7 @@ async function generateCertificatePDF(data: {
   doc.setFontSize(16);
   doc.setTextColor(33, 37, 41);
   doc.text(
-    `has successfully completed initial AI QAthe ${data.worktestLevel} level`,
+    `has successfully completed initial AI QA the ${data.worktestLevel} level`,
     W / 2,
     y,
     { align: "center" }
