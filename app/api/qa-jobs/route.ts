@@ -2,7 +2,6 @@
 import { execFileSync } from "child_process";
 import fs from "fs";
 import path from "path";
-import PDFDocument from "pdfkit";
 import { v4 as uuidv4 } from "uuid";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -21,8 +20,8 @@ class QAJobQueue {
   private processing = false;
   private maxConcurrentJobs = parseInt(
     process.env.MAX_CONCURRENT_QA_JOBS || "3"
-  ); // Configurable via env var
-  private maxQueueSize = parseInt(process.env.MAX_QUEUE_SIZE || "20"); // Max jobs that can wait in queue
+  );
+  private maxQueueSize = parseInt(process.env.MAX_QUEUE_SIZE || "20");
   private activeJobs = new Set<string>();
   private maxRetries = 2;
 
@@ -39,7 +38,6 @@ class QAJobQueue {
     references: string[],
     modelStats?: ModelStats
   ) {
-    // Check if queue is full
     if (this.queue.length >= this.maxQueueSize) {
       throw new Error(
         `Queue is full. Maximum ${this.maxQueueSize} jobs can be queued. Please try again later.`
@@ -58,9 +56,7 @@ class QAJobQueue {
       retryCount: 0,
     });
 
-    // Update job status to queued
     await supabase.from("qa_jobs").update({ status: "queued" }).eq("id", jobId);
-
     this.processQueue();
   }
 
@@ -86,14 +82,12 @@ class QAJobQueue {
 
       this.activeJobs.add(job.jobId);
 
-      // Process job asynchronously
       this.processJob(job).finally(() => {
         this.activeJobs.delete(job.jobId);
         console.log(
           `Completed job ${job.jobId}. Active jobs: ${this.activeJobs.size}/${this.maxConcurrentJobs}`
         );
 
-        // Continue processing queue
         setTimeout(() => this.processQueue(), 100);
       });
     }
@@ -121,7 +115,6 @@ class QAJobQueue {
         error.message
       );
 
-      // Retry logic
       if (job.retryCount < this.maxRetries) {
         job.retryCount++;
         console.log(
@@ -130,11 +123,10 @@ class QAJobQueue {
           })`
         );
 
-        // Add back to queue with delay
         setTimeout(() => {
-          this.queue.unshift(job); // Add to front of queue for priority retry
+          this.queue.unshift(job);
           this.processQueue();
-        }, 5000 * job.retryCount); // Exponential backoff: 5s, 10s, 15s
+        }, 5000 * job.retryCount);
       } else {
         console.error(
           `Job ${job.jobId} failed permanently after ${
@@ -142,7 +134,6 @@ class QAJobQueue {
           } attempts`
         );
 
-        // Mark as permanently failed
         await supabase
           .from("qa_jobs")
           .update({
@@ -157,7 +148,6 @@ class QAJobQueue {
     }
   }
 
-  // Get queue status for monitoring
   getQueueStatus() {
     return {
       queueLength: this.queue.length,
@@ -169,17 +159,16 @@ class QAJobQueue {
     };
   }
 
-  // Get position of job in queue
   getJobPosition(jobId: string): number {
     const position = this.queue.findIndex((job) => job.jobId === jobId);
-    return position === -1 ? -1 : position + 1; // Return 1-based position, -1 if not found
+    return position === -1 ? -1 : position + 1;
   }
 }
 
 // Rate limiting per IP
 const rateLimiter = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
-const RATE_LIMIT_MAX_REQUESTS = 5; // Max 5 requests per 15 minutes per IP
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 5;
 
 function checkRateLimit(ip: string): {
   allowed: boolean;
@@ -191,7 +180,6 @@ function checkRateLimit(ip: string): {
 
   let limiter = rateLimiter.get(key);
 
-  // Reset if window expired
   if (!limiter || now > limiter.resetTime) {
     limiter = {
       count: 0,
@@ -268,7 +256,6 @@ type QAResults = {
 function extractSimilarityScores(summary: string) {
   const scores: any = {};
 
-  // More robust patterns to catch different formats
   const patterns: Record<string, RegExp> = {
     silhouette: /silhouette[:\s]*(\d+)%/i,
     proportion: /proportion[:\s]*(\d+)%/i,
@@ -276,7 +263,6 @@ function extractSimilarityScores(summary: string) {
     overall: /overall[:\s]*(\d+)%/i,
   };
 
-  // Also try these alternative patterns
   const alternativePatterns: Record<string, RegExp> = {
     silhouette: /(\d+)%[^,]*silhouette/i,
     proportion: /(\d+)%[^,]*proportion/i,
@@ -287,7 +273,6 @@ function extractSimilarityScores(summary: string) {
   for (const [key, pattern] of Object.entries(patterns)) {
     let match = summary.match(pattern);
     if (!match) {
-      // Try alternative pattern
       match = summary.match(alternativePatterns[key]);
     }
     if (match) {
@@ -299,291 +284,6 @@ function extractSimilarityScores(summary: string) {
   console.log("From summary:", summary);
 
   return scores;
-}
-
-// Helper: generate a 2-page PDF from annotated PNGs + diff
-async function generatePDF(
-  annotated: string[],
-  diff: any,
-  modelStats?: ModelStats,
-  tmpDir?: string
-): Promise<Buffer> {
-  return new Promise(async (resolve, reject) => {
-    try {
-      // Get path to Roboto font
-      const ttf = path.join(process.cwd(), "fonts", "Roboto-Regular.ttf");
-
-      // Prepare for logo
-      const logoPath = path.join(tmpDir || process.cwd(), "logo.png");
-      let hasLogo = false;
-
-      // Try to download the logo
-      try {
-        const logoRes = await fetch(
-          "https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
-        );
-        if (logoRes.ok) {
-          const logoBuffer = Buffer.from(await logoRes.arrayBuffer());
-          fs.writeFileSync(logoPath, logoBuffer);
-          hasLogo = true;
-        }
-      } catch (logoErr) {
-        console.error("Failed to download logo:", logoErr);
-      }
-
-      // Create PDF document with standard A4 size and minimal margins
-      const doc = new PDFDocument({
-        autoFirstPage: false,
-        size: [595.28, 841.89], // A4 in points
-        margins: {
-          top: 50,
-          bottom: 50,
-          left: 50,
-          right: 50,
-        },
-        font: ttf,
-        info: {
-          Title: "3D Model QA Report",
-          Author: "CharpstAR QA Automator",
-        },
-      });
-
-      // Create our own data collection system
-      const buffers: Buffer[] = [];
-      doc.on("data", (chunk) => buffers.push(Buffer.from(chunk)));
-      doc.on("end", () => resolve(Buffer.concat(buffers)));
-      doc.on("error", (err) => reject(err));
-
-      // Register our font
-      doc.registerFont("MainFont", ttf);
-
-      // Add first page
-      doc.addPage();
-
-      // --- PAGE 1: HEADER AND IMAGES ---
-
-      // Header - use logo if available, otherwise text
-      if (hasLogo) {
-        doc.image(logoPath, 40, 40, { width: 150 });
-        doc
-          .fontSize(14)
-          .text("3D Model QA Report", 50, 85, { continued: false });
-      } else {
-        // Fallback to original behavior
-        doc
-          .font("MainFont")
-          .fontSize(16)
-          .text("CharpstAR", { continued: false });
-        doc.fontSize(14).text("3D Model QA Report", { continued: false });
-      }
-
-      // Horizontal rule
-      doc.moveDown(0.5);
-      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
-      doc.moveDown(1);
-
-      // Calculate available content width and height
-      const contentWidth = 495; // 595.28 - 50 - 50 (page width minus margins)
-
-      // Create a combined layout for all image pairs to ensure they're on the same page
-      // If we have multiple images, make them smaller to fit
-      const imageWidth = contentWidth;
-      const imageHeight = annotated.length > 1 ? 280 : 380; // Smaller if multiple images
-      const verticalGap = 10;
-
-      let currentY = doc.y;
-
-      // Process each image
-      for (let i = 0; i < annotated.length; i++) {
-        // Add a new page for each new image after the first, except for the first page
-        if (i > 0) {
-          // Only add a page break when needed
-          if (currentY + imageHeight + 40 > 750) {
-            doc.addPage();
-            currentY = 70; // Reset Y position on new page
-          }
-        }
-
-        // Add image caption
-        doc.fontSize(12).text(`Comparison View ${i + 1}`, { align: "center" });
-        doc.moveDown(0.3);
-        currentY = doc.y;
-
-        // Place image
-        doc.image(annotated[i], 50, currentY, {
-          width: imageWidth,
-          height: imageHeight,
-          fit: [imageWidth, imageHeight],
-          align: "center",
-        });
-
-        // Move position for next image
-        currentY += imageHeight + verticalGap;
-        doc.y = currentY;
-      }
-
-      // --- MODEL PROPERTIES AND QA SUMMARY ALWAYS ON A NEW PAGE ---
-
-      // Always start a new page for the analysis section
-      doc.addPage();
-
-      // 3D Model Properties section
-      doc.fontSize(14).text("Technical Overview", { align: "left" });
-      doc.moveDown(1.5);
-
-      // Calculate column widths and positions
-      // const pageWidth = 495; // Content width (right margin - left margin)
-      // const leftColumnWidth = pageWidth * 0.6; // 60% for technical overview
-      // const rightColumnWidth = pageWidth * 0.4; // 40% for QA summary
-      // const leftColumnEnd = 50 + leftColumnWidth;
-      // const contentWidth = 495; // Full width for technical overview
-
-      // Create a two-column layout
-      const originalY = doc.y; // Store the starting Y position
-
-      // Model properties with icons for compliance - LEFT COLUMN
-      doc.fontSize(11);
-
-      // Function to add a property line with check/x mark
-      const addPropertyLine = (
-        property: string,
-        value: string | number,
-        limit?: number | null,
-        unit: string = ""
-      ) => {
-        // Format number with commas for thousands
-        const formatNumber = (num: number): string => {
-          return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        };
-
-        const valueStr =
-          (typeof value === "number" ? formatNumber(value) : value) + unit;
-        const checkValue =
-          typeof value === "number" ? value : parseFloat(String(value));
-
-        // Start horizontal positioning
-        const startY = doc.y;
-
-        // Draw colored circle icon based on compliance
-        if (limit !== undefined) {
-          const isCompliant = limit === null || checkValue <= limit;
-          const circleColor = isCompliant ? "#34a853" : "#ea4335"; // Green or Red
-
-          doc
-            .circle(65, startY + 6, 5)
-            .fillColor(circleColor)
-            .fill();
-        } else {
-          // Gray circle for properties with no limit
-          doc
-            .circle(65, startY + 6, 5)
-            .fillColor("#9aa0a6")
-            .fill();
-        }
-
-        // Reset fill color for text
-        doc.fillColor("#000000");
-
-        // Property name (left aligned)
-        doc.text(property, 80, startY, { continued: false, width: 160 });
-
-        // Value (center-right aligned)
-        doc.text(valueStr, 240, startY, {
-          continued: false,
-          width: 80,
-          align: "right",
-        });
-
-        // Limit text (right aligned)
-        if (limit !== undefined) {
-          doc
-            .fillColor("#5f6368")
-            .fontSize(10)
-            .text(
-              limit === null
-                ? ""
-                : `(limit: ${limit ? formatNumber(limit) : limit}${unit})`,
-              330,
-              startY,
-              { width: contentWidth - 280, align: "right" }
-            )
-            .fillColor("#000000")
-            .fontSize(11);
-        }
-
-        doc.moveDown(1.5);
-      };
-
-      // Add model properties with their limits
-      if (modelStats) {
-        const requirements = modelStats.requirements;
-
-        addPropertyLine(
-          "Polycount",
-          modelStats.triangles,
-          requirements?.maxTriangles
-        );
-        addPropertyLine("Mesh Count", modelStats.meshCount, 5);
-        addPropertyLine(
-          "Material Count",
-          modelStats.materialCount,
-          requirements?.maxMaterials
-        );
-        addPropertyLine(
-          "Double-sided Materials",
-          modelStats.doubleSidedCount,
-          0
-        );
-        addPropertyLine(
-          "File Size",
-          parseFloat((modelStats.fileSize / (1024 * 1024)).toFixed(2)),
-          requirements?.maxFileSize
-            ? requirements.maxFileSize / (1024 * 1024)
-            : 15,
-          "MB"
-        );
-      } else {
-        // Use placeholder values if no stats provided
-        const properties = [
-          "• Polycount: 150,000",
-          "• Material Count: 5",
-          "• File Size: 5.2MB",
-        ];
-
-        properties.forEach((prop) => {
-          doc.text(prop);
-          doc.moveDown(1.5);
-        });
-      }
-
-      // Add a horizontal line across the full page width
-      const lineY = doc.y + 15;
-      doc.moveTo(50, lineY).lineTo(545, lineY).stroke();
-
-      // Reset position to continue after the horizontal line
-      doc.x = 50;
-      doc.y = lineY + 20;
-
-      // QA Summary section
-      doc.fontSize(14).text("QA Summary");
-      doc.moveDown(0.5);
-
-      // Summary text
-      doc.fontSize(11).text(diff.summary || "No issues found.");
-      doc.moveDown(1);
-
-      doc.fontSize(12).text("Status:");
-      doc.moveDown(0.5);
-
-      doc.fontSize(11);
-      doc.text(diff.status);
-
-      // Finalize PDF
-      doc.end();
-    } catch (err) {
-      reject(err);
-    }
-  });
 }
 
 async function downloadImages(
@@ -616,7 +316,7 @@ async function downloadImages(
   return allPaths;
 }
 
-// Process a single QA job
+// Process a single QA job - REMOVED PDF GENERATION
 async function processQAJob(
   jobId: string,
   renders: string[],
@@ -626,13 +326,11 @@ async function processQAJob(
   const tmpDir = path.join("/tmp", jobId);
 
   try {
-    // Update status to processing
     await supabase
       .from("qa_jobs")
       .update({ status: "processing" })
       .eq("id", jobId);
 
-    // Clean up and create temp directory
     if (fs.existsSync(tmpDir))
       fs.rmSync(tmpDir, { recursive: true, force: true });
     fs.mkdirSync(tmpDir, { recursive: true });
@@ -676,17 +374,6 @@ async function processQAJob(
         "10. Do not swap renderIndex and referenceIndex.\n" +
         "11. Group similar issues together and choose the best view to report them.\n" +
         "12. Before adding an issue, check if you've already reported the same problem - if yes, skip it.\n\n" +
-        "‼️ INCORRECT EXAMPLES (DO NOT DO THESE) ‼️\n" +
-        "• '3D 3D Model shows side logo as \"NGS\"; reference shows different positioning and size' - WRONG! These are different views\n" +
-        "• 'Render shows the product from the front; reference shows it from the back' - WRONG! Skip this comparison\n" +
-        "• 'The button is visible in the 3D Model but not in the reference' - WRONG! Different perspectives\n" +
-        "• Reporting 'cushion color is light gray vs off-white' for multiple views - WRONG! Report once only\n" +
-        "• Giving 95% for color when there's an obvious color difference - WRONG! Be much stricter\n\n" +
-        "‼️ CORRECT EXAMPLES ‼️\n" +
-        "• '3D Model shows yellow cushion fabric; reference shows white cushion fabric' - CORRECT (same view, actual difference, reported once)\n" +
-        "• '3D Model shows smoother texture; reference shows more detailed grain' - CORRECT (same view, actual difference)\n" +
-        "• Cushion color noticeably different = Color/Material score should be 60-75%, not 85%\n" +
-        "• Small proportion differences = Proportion score should be 75-85%, not 95%\n\n" +
         "Output *only* a single valid JSON object, for example:\n" +
         "{\n" +
         '  "differences": [\n' +
@@ -767,97 +454,18 @@ async function processQAJob(
     // Extract similarity scores from summary
     qaResults.similarityScores = extractSimilarityScores(qaResults.summary);
 
-    // Store QA results in database
+    // Store QA results in database - NO PDF GENERATION
     await supabase
       .from("qa_jobs")
       .update({
         qa_results: JSON.stringify(qaResults),
-      })
-      .eq("id", jobId);
-
-    // Download images and create annotations
-    const allUrls = [...renders, ...references];
-    const allPaths = await downloadImages(allUrls, tmpDir);
-    const diffPath = path.join(tmpDir, "diff.json");
-    fs.writeFileSync(diffPath, JSON.stringify(qaResults, null, 2));
-
-    const outDir = path.join(tmpDir, "annotations");
-    fs.mkdirSync(outDir, { recursive: true });
-
-    // Call annotation service
-    const imagePayload = allPaths.map((p) => {
-      const buffer = fs.readFileSync(p);
-      const base64 = buffer.toString("base64");
-      const filename = path.basename(p);
-      return { filename, data: base64 };
-    });
-
-    const response = await fetch("http://45.76.82.207:8080/annotate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        images: imagePayload,
-        diff_json: fs.readFileSync(diffPath, "utf-8"),
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Annotator server error: ${response.status} - ${errorText}`
-      );
-    }
-
-    const result = await response.json();
-
-    if (!Array.isArray(result.images) || result.images.length === 0) {
-      throw new Error("No annotated images returned from annotator.");
-    }
-
-    // Save annotated images
-    for (const img of result.images) {
-      if (!img.filename || !img.data) {
-        console.warn("Skipping invalid image object:", img);
-        continue;
-      }
-
-      const buffer = Buffer.from(img.data, "base64");
-      const savePath = path.join(outDir, img.filename);
-      fs.writeFileSync(savePath, buffer);
-    }
-
-    const annotated = fs
-      .readdirSync(outDir)
-      .filter((f) => f.endsWith(".png"))
-      .map((f) => path.join(outDir, f));
-
-    // Generate PDF with QA results
-    const pdfBuf = await generatePDF(annotated, qaResults, modelStats, tmpDir);
-
-    // Save PDF
-    await fetch("http://45.76.82.207:8080/save-pdf", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        filename: `qa-report-${jobId}.pdf`,
-        data: pdfBuf.toString("base64"),
-      }),
-    });
-
-    const pdfPath = `http://45.76.82.207:8080/saved_pdfs/qa-report-${jobId}.pdf`;
-
-    // Update job as complete
-    await supabase
-      .from("qa_jobs")
-      .update({
         status: "complete",
         end_time: new Date(),
-        pdf_url: pdfPath,
       })
       .eq("id", jobId);
 
     console.log(`Job ${jobId} completed successfully`);
-    return { jobId, status: "complete", pdfPath };
+    return { jobId, status: "complete", qaResults };
   } catch (error: any) {
     console.error(`Job ${jobId} failed:`, error);
 
@@ -877,14 +485,12 @@ async function processQAJob(
 // POST endpoint to create a new QA job
 export async function POST(request: NextRequest) {
   try {
-    // Get client IP for rate limiting
     const ip =
       request.ip ||
       request.headers.get("x-forwarded-for") ||
       request.headers.get("x-real-ip") ||
       "unknown";
 
-    // Check rate limit
     const rateLimit = checkRateLimit(ip);
     if (!rateLimit.allowed) {
       const resetDate = new Date(rateLimit.resetTime).toISOString();
@@ -908,7 +514,6 @@ export async function POST(request: NextRequest) {
     const { renders, references, modelStats, worktestLevel } =
       await request.json();
 
-    // Validation
     if (!Array.isArray(renders) || renders.length !== 4) {
       return NextResponse.json(
         { error: "Must send exactly 4 renders" },
@@ -927,7 +532,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate job ID and create job record
     const jobId = uuidv4();
     const { error: insertError } = await supabase.from("qa_jobs").insert([
       {
@@ -945,13 +549,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Add job to queue
     const queue = QAJobQueue.getInstance();
 
     try {
       await queue.addJob(jobId, renders, references, modelStats);
     } catch (queueError: any) {
-      // Queue is full - clean up the job we just created
       await supabase
         .from("qa_jobs")
         .update({
@@ -966,11 +568,10 @@ export async function POST(request: NextRequest) {
           error: queueError.message,
           queueStatus: queue.getQueueStatus(),
         },
-        { status: 503 } // Service Unavailable
+        { status: 503 }
       );
     }
 
-    // Get queue status for response
     const queueStatus = queue.getQueueStatus();
     const position = queue.getJobPosition(jobId);
 
@@ -984,7 +585,7 @@ export async function POST(request: NextRequest) {
         jobId,
         status: "queued",
         queuePosition: position,
-        estimatedWaitTime: position * 2, // Rough estimate: 2 minutes per job ahead
+        estimatedWaitTime: position * 2,
         queueInfo: {
           position: position,
           totalInQueue: queueStatus.queueLength,
@@ -1015,7 +616,6 @@ export async function GET(request: NextRequest) {
     const includeQueue = url.searchParams.get("includeQueue") === "true";
 
     if (!jobId) {
-      // If no jobId provided, return queue status
       if (includeQueue) {
         const queue = QAJobQueue.getInstance();
         return NextResponse.json({
@@ -1029,7 +629,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get job from Supabase
     const { data: job, error } = await supabase
       .from("qa_jobs")
       .select("*")
@@ -1040,13 +639,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
-    // Parse QA results if available
     let qaResults = null;
     if (job.qa_results) {
       try {
         qaResults = JSON.parse(job.qa_results);
 
-        // Ensure similarity scores are included
         if (qaResults.summary && !qaResults.similarityScores) {
           qaResults.similarityScores = extractSimilarityScores(
             qaResults.summary
@@ -1057,7 +654,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Get queue information if job is still queued
     let queueInfo = null;
     if (job.status === "queued" || job.status === "pending") {
       const queue = QAJobQueue.getInstance();
@@ -1073,14 +669,12 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    // Return job status with QA results
     return NextResponse.json({
       jobId,
       status: job.status,
       error: job.error,
       startTime: job.start_time,
       endTime: job.end_time,
-      pdfUrl: job.pdf_url,
       qaResults,
       queueInfo,
     });
