@@ -1,3 +1,5 @@
+// First install: npm install jspdf
+
 // app/api/generate-certificate/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "../../../lib/supabase";
@@ -9,9 +11,7 @@ export async function POST(request: NextRequest) {
 
     if (!jobId || !candidateName || !worktestLevel) {
       return NextResponse.json(
-        {
-          error: "Missing required fields: jobId, candidateName, worktestLevel",
-        },
+        { error: "Missing required fields: jobId, candidateName, worktestLevel" },
         { status: 400 }
       );
     }
@@ -70,10 +70,8 @@ export async function POST(request: NextRequest) {
     return new NextResponse(pdfBuffer, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="CharpstAR_Certificate_${candidateName.replace(
-          /\s+/g,
-          "_"
-        )}_${worktestLevel.toUpperCase()}.pdf"`,
+        "Content-Disposition": `attachment; filename="CharpstAR_Certificate_${candidateName
+          .replace(/\s+/g, "_")}_${worktestLevel.toUpperCase()}.pdf"`,
         "Content-Length": pdfBuffer.length.toString(),
       },
     });
@@ -127,42 +125,45 @@ async function generateCertificatePDF(data: {
 
   // ── Header background wash ─────────────────────────────────
   doc.setFillColor(245, 245, 245);
-  doc.rect(margin + 1, margin + 1, W - (margin + 1) * 2, 50, "F");
+  doc.rect(margin + 1, margin + 1, W - (margin + 1) * 2, 60, "F");
 
-  // ── Logo (now centered at the very top) ─────────────────────
+  // ── Logo (centered at top) ─────────────────────────────────
   const logoData = await getImageAsBase64(
     "https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
   );
+  const logoWidth = 40;
+  const logoHeight = 16;
+  const logoX = (W - logoWidth) / 2;
+  const logoY = margin + 5;
   if (logoData) {
-    const logoWidth = 40;
-    const logoHeight = 16;
-    const logoX = (W - logoWidth) / 2;
-    const logoY = margin + 5;
     doc.addImage(logoData, "PNG", logoX, logoY, logoWidth, logoHeight);
   }
 
-  // ── Title & Subtitle ────────────────────────────────────────
+  // ── Title & Subtitle (moved below logo) ────────────────────
+  const titleY = logoY + logoHeight + 8;   // 8mm gap beneath logo
+  const subtitleY = titleY + 14;
+
   doc.setFont("helvetica", "bold");
   doc.setFontSize(30);
   doc.setTextColor(33, 37, 41);
-  doc.text("CERTIFICATE OF ACHIEVEMENT", W / 2, margin + 20, {
+  doc.text("CERTIFICATE OF ACHIEVEMENT", W / 2, titleY, {
     align: "center",
   });
 
-  // Subtitle underline
+  // Underline
   doc.setDrawColor("#666666");
   doc.setLineWidth(0.5);
-  doc.line(W / 2 - 70, margin + 24, W / 2 + 70, margin + 24);
+  doc.line(W / 2 - 70, titleY + 4, W / 2 + 70, titleY + 4);
 
-  doc.setFontSize(14);
   doc.setFont("helvetica", "normal");
+  doc.setFontSize(14);
   doc.setTextColor(80, 85, 100);
-  doc.text("3D Modeling Worktest Completion", W / 2, margin + 34, {
+  doc.text("3D Modeling Worktest Completion", W / 2, subtitleY, {
     align: "center",
   });
 
   // ── Body text ────────────────────────────────────────────────
-  let y = margin + 60;
+  let y = subtitleY + 20;
   doc.setFontSize(16);
   doc.setTextColor(100, 108, 120);
   doc.text("This is to certify that", W / 2, y, { align: "center" });
@@ -192,9 +193,12 @@ async function generateCertificatePDF(data: {
   y += 10;
   doc.setFontSize(14);
   doc.setTextColor(80, 85, 100);
-  doc.text("3D Modeling Worktest with Outstanding Results", W / 2, y, {
-    align: "center",
-  });
+  doc.text(
+    "3D Modeling Worktest with Outstanding Results",
+    W / 2,
+    y,
+    { align: "center" }
+  );
 
   // ── Footer ───────────────────────────────────────────────────
   const footerY = H - margin - 25;
