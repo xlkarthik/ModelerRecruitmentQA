@@ -146,39 +146,28 @@ async function generateCertificatePDF(data: {
     align: "center",
   });
 
-  // Main content area - properly centered and spaced
-  const contentCenterY = (pageHeight - 65 - 60) / 2 + 65; // Center between header and footer
-
+  // Main content area - properly spaced and positioned
   doc.setTextColor(gray.r, gray.g, gray.b);
   doc.setFontSize(16);
-  doc.text("This is to certify that", pageWidth / 2, contentCenterY - 40, {
-    align: "center",
-  });
+  doc.text("This is to certify that", pageWidth / 2, 110, { align: "center" });
 
-  // Name - prominently displayed
+  // Name - with adequate space
   doc.setTextColor(dark.r, dark.g, dark.b);
   doc.setFontSize(36);
-  doc.text(data.candidateName, pageWidth / 2, contentCenterY - 10, {
-    align: "center",
-  });
+  doc.text(data.candidateName, pageWidth / 2, 135, { align: "center" });
 
-  // Line under name - centered and proportional
+  // Line under name - properly positioned below name
   doc.setDrawColor(blue.r, blue.g, blue.b);
   doc.setLineWidth(1);
-  doc.line(
-    pageWidth / 2 - 60,
-    contentCenterY - 2,
-    pageWidth / 2 + 60,
-    contentCenterY - 2
-  );
+  doc.line(pageWidth / 2 - 60, 145, pageWidth / 2 + 60, 145);
 
-  // Achievement text - properly spaced
+  // Achievement text - well spaced below the line
   doc.setTextColor(dark.r, dark.g, dark.b);
   doc.setFontSize(16);
   doc.text(
     `has successfully completed the ${data.worktestLevel} Level`,
     pageWidth / 2,
-    contentCenterY + 20,
+    165,
     { align: "center" }
   );
 
@@ -186,12 +175,12 @@ async function generateCertificatePDF(data: {
   doc.text(
     "3D Modeling Worktest with Outstanding Results",
     pageWidth / 2,
-    contentCenterY + 40,
+    180,
     { align: "center" }
   );
 
-  // Footer area - properly positioned from bottom
-  const footerStartY = pageHeight - margin - 40;
+  // Footer area - moved further down to avoid overlap
+  const footerStartY = pageHeight - margin - 35;
 
   // Logo area - left side with proper margin
   const logoUrl =
