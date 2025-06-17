@@ -194,6 +194,7 @@ async function generatePassPDF(data: {
     `Please download this pass and email it along with your exported .glb model`,
     `to recruitment@charpstar.com for further review.`,
   ];
+  
   doc.text(lines, W / 2, y, {
     align: "center",
     maxWidth: W - margin * 2,
