@@ -129,12 +129,16 @@ async function generateCertificatePDF(data: {
   doc.setFillColor(245, 245, 245);
   doc.rect(margin + 1, margin + 1, W - (margin + 1) * 2, 50, "F");
 
-  // ── Logo ────────────────────────────────────────────────────
+  // ── Logo (now centered at the very top) ─────────────────────
   const logoData = await getImageAsBase64(
     "https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
   );
   if (logoData) {
-    doc.addImage(logoData, "PNG", margin + 5, margin + 5, 40, 16);
+    const logoWidth = 40;
+    const logoHeight = 16;
+    const logoX = (W - logoWidth) / 2;
+    const logoY = margin + 5;
+    doc.addImage(logoData, "PNG", logoX, logoY, logoWidth, logoHeight);
   }
 
   // ── Title & Subtitle ────────────────────────────────────────
@@ -212,8 +216,6 @@ async function generateCertificatePDF(data: {
     align: "center",
   });
   doc.text("CharpstAR Team", sigX + 25, footerY + 12, { align: "center" });
-
-  // Optionally: watermark or seal can be added here
 
   return Buffer.from(doc.output("arraybuffer"));
 }
