@@ -119,7 +119,6 @@ export default function WorktestQA() {
   const [loadingQA, setLoadingQA] = useState(false);
   const [fact, setFact] = useState<string>("");
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
-  const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null);
   const [viewerReady, setViewerReady] = useState(false);
   const [candidateName, setCandidateName] = useState<string>("");
   const [showCertificateModal, setShowCertificateModal] = useState(false);
@@ -193,108 +192,76 @@ export default function WorktestQA() {
 
   // Cleanup polling interval and handle qaComplete state changes
   useEffect(() => {
-    return () => {
-      if (pollInterval) {
-        clearInterval(pollInterval);
-      }
-    };
-  }, [pollInterval]);
+    // This effect is now redundant - polling is handled in the main effect above
+  }, []);
 
-  // Stop polling when QA is complete
+  // Poll for job status - SIMPLIFIED AND ROBUST VERSION
   useEffect(() => {
-    if (qaComplete && pollInterval) {
-      console.log("QA Complete - clearing polling interval");
-      clearInterval(pollInterval);
-      setPollInterval(null);
-    }
-  }, [qaComplete, pollInterval]);
-
-  // Poll for job status
-  useEffect(() => {
-    if (!currentJobId) return;
+    if (!currentJobId || qaComplete) return;
 
     console.log("Starting polling for job:", currentJobId);
 
-    if (pollInterval) {
-      clearInterval(pollInterval);
-    }
+    let intervalId: NodeJS.Timeout;
+    let isActive = true;
 
     const checkJobStatus = async () => {
-      try {
-        console.log("Checking status for job:", currentJobId);
+      if (!isActive) return; // Early exit if effect was cleaned up
 
+      try {
         const response = await fetch(`/api/qa-jobs?jobId=${currentJobId}`);
 
         if (!response.ok) {
-          console.error(
-            `Job status check failed: ${response.status} ${response.statusText}`
-          );
+          console.error(`Job status check failed: ${response.status}`);
           setError(`Failed to check job status: ${response.statusText}`);
           setLoadingQA(false);
-          if (pollInterval) {
-            clearInterval(pollInterval);
-            setPollInterval(null);
-          }
+          isActive = false;
           return;
         }
 
         const data = await response.json();
-        console.log("Job status:", data);
+        console.log("Job status response:", data.status);
+
+        if (!isActive) return; // Check again before processing
 
         if (data.status === "complete") {
-          console.log("Job complete! QA Results:", data.qaResults);
+          console.log("🎉 Job completed! Stopping polling...");
 
-          // Parse QA results if available
           if (data.qaResults) {
             setQaResults(data.qaResults);
           }
 
           setQaComplete(true);
           setLoadingQA(false);
-
-          // CRITICAL: Clear the polling interval immediately
-          if (pollInterval) {
-            clearInterval(pollInterval);
-            setPollInterval(null);
-          }
-
-          console.log("Polling stopped - job complete");
+          isActive = false; // Stop any further polling
         } else if (data.status === "failed") {
-          console.error("Job failed:", data.error);
+          console.error("❌ Job failed:", data.error);
           setError(data.error || "QA processing failed");
           setLoadingQA(false);
-          if (pollInterval) {
-            clearInterval(pollInterval);
-            setPollInterval(null);
-          }
+          isActive = false;
         } else {
-          console.log(`Job still ${data.status}, continuing to poll...`);
+          console.log(`⏳ Job still ${data.status}, continuing...`);
         }
       } catch (err: any) {
         console.error("Error checking job status:", err);
         setError(`Failed to check job status: ${err.message}`);
         setLoadingQA(false);
-        if (pollInterval) {
-          clearInterval(pollInterval);
-          setPollInterval(null);
-        }
+        isActive = false;
       }
     };
 
-    const interval = setInterval(checkJobStatus, 2000);
-    setPollInterval(interval);
-
-    // Call immediately first time
-    checkJobStatus();
+    // Start polling
+    intervalId = setInterval(checkJobStatus, 2000);
+    checkJobStatus(); // Call immediately
 
     // Cleanup function
     return () => {
-      console.log("Cleaning up polling interval for job:", currentJobId);
-      if (interval) {
-        clearInterval(interval);
+      console.log("🧹 Cleaning up polling for job:", currentJobId);
+      isActive = false;
+      if (intervalId) {
+        clearInterval(intervalId);
       }
     };
-  }, [currentJobId]); // Remove pollInterval from dependencies to avoid recreation
+  }, [currentJobId, qaComplete]); // Include qaComplete to stop when it changes
 
   // Rotate through facts while loading
   useEffect(() => {
@@ -666,11 +633,6 @@ export default function WorktestQA() {
     setCandidateName("");
     setShowCertificateModal(false);
     setCertificateData(null);
-
-    if (pollInterval) {
-      clearInterval(pollInterval);
-      setPollInterval(null);
-    }
 
     if (loadTimeoutRef.current) {
       clearTimeout(loadTimeoutRef.current);
