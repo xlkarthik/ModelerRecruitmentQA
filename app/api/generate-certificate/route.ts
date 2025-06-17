@@ -212,8 +212,8 @@ async function generatePassPDF(data: {
   doc.line(sigX, footerY, sigX + 50, footerY);
 
   doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(80);
-  doc.text("Authorized Signatory", sigX + 25, footerY + 6, { align: "center" });
-  doc.text("CharpstAR Team", sigX + 25, footerY + 12, { align: "center" });
+//   doc.text("Authorized Signatory", sigX + 25, footerY + 6, { align: "center" });
+//   doc.text("CharpstAR Team", sigX + 25, footerY + 12, { align: "center" });
 
   return Buffer.from(doc.output("arraybuffer"));
 }
