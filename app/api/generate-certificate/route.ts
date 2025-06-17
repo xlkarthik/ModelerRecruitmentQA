@@ -167,13 +167,13 @@ async function generateCertificatePDF(data: {
   doc.line(W / 2 - 60, y, W / 2 + 60, y);
 
   y += 15;
-  doc.setFont("times", "normal").setFontSize(16).setTextColor(33);
-  doc.text(
-    `has successfully completed the ${data.worktestLevel} level`,
-    W / 2,
-    y,
-    { align: "center" }
-  );
+  //   doc.setFont("times", "normal").setFontSize(16).setTextColor(33);
+  //   doc.text(
+  //     `has successfully completed the ${data.worktestLevel} level`,
+  //     W / 2,
+  //     y,
+  //     { align: "center" }
+  //   );
 
   //   y += 20;
   //   doc.setFontSize(14).setTextColor(80);
