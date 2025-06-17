@@ -94,7 +94,6 @@ async function getImageAsBase64(url: string): Promise<string | null> {
     const buffer = await response.arrayBuffer();
     const base64 = Buffer.from(buffer).toString("base64");
 
-    // Determine image type from URL or response
     const contentType = response.headers.get("content-type") || "image/png";
     return `data:${contentType};base64,${base64}`;
   } catch (error) {
@@ -120,155 +119,117 @@ async function generateCertificatePDF(data: {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  // Professional color palette
+  // Colors
   const blue = { r: 102, g: 126, b: 234 };
   const dark = { r: 45, g: 55, b: 72 };
   const gray = { r: 113, g: 128, b: 150 };
-  const lightGray = { r: 248, g: 250, b: 252 };
 
-  // Fetch logo
-  const logoUrl =
-    "https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png";
-  const logoBase64 = await getImageAsBase64(logoUrl);
+  // Border
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(1);
+  doc.rect(15, 15, pageWidth - 30, pageHeight - 30);
 
-  // Outer border with subtle shadow effect
-  doc.setFillColor(230, 230, 230);
-  doc.rect(5, 5, pageWidth - 10, pageHeight - 10, "F");
-
-  // Main certificate background
-  doc.setFillColor(255, 255, 255);
-  doc.rect(10, 10, pageWidth - 20, pageHeight - 20, "F");
-
-  // Header section
+  // Header
   doc.setFillColor(blue.r, blue.g, blue.b);
-  doc.rect(10, 10, pageWidth - 20, 75, "F");
+  doc.rect(15, 15, pageWidth - 30, 60, "F");
 
-  // Header accent line
-  doc.setFillColor(blue.r - 20, blue.g - 20, blue.b - 20);
-  doc.rect(10, 80, pageWidth - 20, 5, "F");
-
-  // Main title - centered and prominent
+  // Title
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(32);
+  doc.setFontSize(28);
   doc.text("CERTIFICATE OF ACHIEVEMENT", pageWidth / 2, 40, {
     align: "center",
   });
 
-  // Subtitle
   doc.setFontSize(14);
-  doc.text("3D Modeling Worktest Completion", pageWidth / 2, 60, {
+  doc.text("3D Modeling Worktest Completion", pageWidth / 2, 58, {
     align: "center",
   });
 
-  // Content area with proper flow
-  const contentStartY = 120;
-  const contentCenterX = pageWidth / 2;
-
-  // Complete certificate text flow
+  // Main content
   doc.setTextColor(gray.r, gray.g, gray.b);
   doc.setFontSize(16);
-  doc.text("This is to certify that", contentCenterX, contentStartY, {
-    align: "center",
-  });
+  doc.text("This is to certify that", pageWidth / 2, 100, { align: "center" });
 
-  // Candidate name - prominent
+  // Name
   doc.setTextColor(dark.r, dark.g, dark.b);
-  doc.setFontSize(42);
-  doc.text(data.candidateName, contentCenterX, contentStartY + 35, {
-    align: "center",
-  });
+  doc.setFontSize(36);
+  doc.text(data.candidateName, pageWidth / 2, 125, { align: "center" });
 
-  // Decorative line under name
+  // Line under name
   doc.setDrawColor(blue.r, blue.g, blue.b);
-  doc.setLineWidth(1);
-  const nameWidth = doc.getTextWidth(data.candidateName) * 0.42;
-  doc.line(
-    contentCenterX - nameWidth / 2,
-    contentStartY + 43,
-    contentCenterX + nameWidth / 2,
-    contentStartY + 43
-  );
+  doc.setLineWidth(0.8);
+  doc.line(pageWidth / 2 - 40, 135, pageWidth / 2 + 40, 135);
 
-  // Complete the sentence flow
+  // Achievement text
   doc.setTextColor(dark.r, dark.g, dark.b);
-  doc.setFontSize(18);
+  doc.setFontSize(16);
   doc.text(
     `has successfully completed the ${data.worktestLevel} Level`,
-    contentCenterX,
-    contentStartY + 65,
+    pageWidth / 2,
+    150,
+    { align: "center" }
+  );
+  doc.text(
+    "3D Modeling Worktest with Outstanding Results",
+    pageWidth / 2,
+    165,
     { align: "center" }
   );
 
-  doc.setFontSize(16);
-  doc.text("3D Modeling Worktest", contentCenterX, contentStartY + 85, {
-    align: "center",
-  });
+  // Footer area
+  const footerY = pageHeight - 50;
 
-  doc.setTextColor(gray.r, gray.g, gray.b);
-  doc.setFontSize(14);
-  doc.text("with Outstanding Results", contentCenterX, contentStartY + 105, {
-    align: "center",
-  });
+  // Logo
+  const logoUrl =
+    "https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png";
+  const logoBase64 = await getImageAsBase64(logoUrl);
 
-  // Logo placement - bottom left corner, properly sized and positioned
   if (logoBase64) {
     try {
-      doc.addImage(logoBase64, "PNG", 25, pageHeight - 45, 40, 16);
+      doc.addImage(logoBase64, "PNG", 30, footerY, 35, 14);
     } catch (error) {
-      console.error("Error adding logo to PDF:", error);
-      // Fallback text
       doc.setTextColor(blue.r, blue.g, blue.b);
       doc.setFontSize(16);
-      doc.text("CharpstAR", 25, pageHeight - 30);
+      doc.text("CharpstAR", 30, footerY + 10);
     }
+  } else {
+    doc.setTextColor(blue.r, blue.g, blue.b);
+    doc.setFontSize(16);
+    doc.text("CharpstAR", 30, footerY + 10);
   }
 
-  // Footer section - cleaner layout
-  const footerY = pageHeight - 35;
-
-  // Date - left, below logo area
+  // Date
   doc.setTextColor(gray.r, gray.g, gray.b);
-  doc.setFontSize(11);
-  doc.text("Issued on", 25, footerY + 10);
+  doc.setFontSize(10);
+  doc.text("Date:", 30, footerY + 20);
   doc.setTextColor(dark.r, dark.g, dark.b);
-  doc.setFontSize(12);
-  doc.text(data.completionDate, 25, footerY + 20);
+  doc.setFontSize(11);
+  doc.text(data.completionDate, 30, footerY + 28);
 
-  // Certificate ID - center bottom
+  // Certificate ID
   doc.setTextColor(gray.r, gray.g, gray.b);
   doc.setFontSize(9);
-  doc.text("Certificate ID", contentCenterX, footerY + 10, { align: "center" });
-  doc.setFontSize(10);
-  doc.text(data.certificateId, contentCenterX, footerY + 20, {
+  doc.text(
+    `Certificate ID: ${data.certificateId}`,
+    pageWidth / 2,
+    footerY + 35,
+    { align: "center" }
+  );
+
+  // Signature
+  const sigX = pageWidth - 80;
+  doc.setDrawColor(dark.r, dark.g, dark.b);
+  doc.setLineWidth(0.5);
+  doc.line(sigX, footerY + 10, sigX + 50, footerY + 10);
+
+  doc.setTextColor(gray.r, gray.g, gray.b);
+  doc.setFontSize(9);
+  doc.text("Authorized Signature", sigX + 25, footerY + 18, {
     align: "center",
   });
-
-  // Signature - right
-  const sigX = pageWidth - 70;
-
-  // Signature line
-  doc.setDrawColor(dark.r, dark.g, dark.b);
-  doc.setLineWidth(1);
-  doc.line(sigX - 40, footerY + 5, sigX + 10, footerY + 5);
-
-  // Signature labels
-  doc.setTextColor(gray.r, gray.g, gray.b);
-  doc.setFontSize(9);
-  doc.text("Authorized by", sigX - 15, footerY + 15, { align: "center" });
-
   doc.setTextColor(dark.r, dark.g, dark.b);
-  doc.setFontSize(11);
-  doc.text("CharpstAR Team", sigX - 15, footerY + 25, { align: "center" });
-
-  // Main border
-  doc.setDrawColor(gray.r, gray.g, gray.b);
-  doc.setLineWidth(0.8);
-  doc.rect(10, 10, pageWidth - 20, pageHeight - 20);
-
-  // Inner border
-  doc.setDrawColor(220, 220, 220);
-  doc.setLineWidth(0.3);
-  doc.rect(15, 15, pageWidth - 30, pageHeight - 30);
+  doc.setFontSize(10);
+  doc.text("CharpstAR Team", sigX + 25, footerY + 26, { align: "center" });
 
   return Buffer.from(doc.output("arraybuffer"));
 }
