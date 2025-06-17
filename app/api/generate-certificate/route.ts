@@ -181,7 +181,7 @@ async function generatePassPDF(data: {
   doc.setFont("times", "bolditalic").setFontSize(36).setTextColor(21);
   doc.text(data.candidateName, W / 2, y, { align: "center" });
 
-  y += 10;
+  y += 13;
   doc.setDrawColor(100).setLineWidth(0.7);
   doc.line(W / 2 - 60, y, W / 2 + 60, y);
 
