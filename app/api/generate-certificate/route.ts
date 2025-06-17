@@ -11,26 +11,24 @@ export async function POST(request: NextRequest) {
 
     if (!jobId || !candidateName || !worktestLevel) {
       return NextResponse.json(
-        {
-          error: "Missing required fields: jobId, candidateName, worktestLevel",
-        },
+        { error: "Missing required fields: jobId, candidateName, worktestLevel" },
         { status: 400 }
       );
     }
 
-    // Get job details from database
-    const { data: job, error } = await supabase
+    // Fetch job details
+    const { data: job, error: fetchError } = await supabase
       .from("qa_jobs")
       .select("*")
       .eq("id", jobId)
       .single();
 
-    if (error || !job) {
+    if (fetchError || !job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
     // Parse QA results
-    let qaResults = null;
+    let qaResults: { status?: string; similarityScores?: any } | null = null;
     if (job.qa_results) {
       try {
         qaResults = JSON.parse(job.qa_results);
@@ -43,7 +41,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check if model is approved
+    // Only approved models get certificates
     if (!qaResults || qaResults.status !== "Approved") {
       return NextResponse.json(
         { error: "Certificate can only be generated for approved models" },
@@ -51,8 +49,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate PDF certificate
-    const pdfBuffer = await generateCertificatePDF({
+    // Build certificate data
+    const certData = {
       candidateName,
       worktestLevel: worktestLevel.toUpperCase(),
       completionDate: new Date().toLocaleDateString("en-GB", {
@@ -63,16 +61,17 @@ export async function POST(request: NextRequest) {
       jobId,
       certificateId: `CSTAR-${worktestLevel.toUpperCase()}-${Date.now()}`,
       similarityScores: qaResults.similarityScores || {},
-    });
+    };
 
-    // Return PDF as download
+    // Generate PDF
+    const pdfBuffer = await generateCertificatePDF(certData);
+
+    // Return as download
     return new NextResponse(pdfBuffer, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="CharpstAR_Certificate_${candidateName.replace(
-          /\s+/g,
-          "_"
-        )}_${worktestLevel}.pdf"`,
+        "Content-Disposition": `attachment; filename="CharpstAR_Certificate_${candidateName
+          .replace(/\s+/g, "_")}_${worktestLevel.toUpperCase()}.pdf"`,
         "Content-Length": pdfBuffer.length.toString(),
       },
     });
@@ -85,15 +84,13 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Function to fetch and convert image to base64
+// Helper: fetch an image URL and convert to Base64
 async function getImageAsBase64(url: string): Promise<string | null> {
   try {
     const response = await fetch(url);
     if (!response.ok) throw new Error("Failed to fetch image");
-
     const buffer = await response.arrayBuffer();
     const base64 = Buffer.from(buffer).toString("base64");
-
     const contentType = response.headers.get("content-type") || "image/png";
     return `data:${contentType};base64,${base64}`;
   } catch (error) {
@@ -102,6 +99,7 @@ async function getImageAsBase64(url: string): Promise<string | null> {
   }
 }
 
+// Core: builds the certificate PDF
 async function generateCertificatePDF(data: {
   candidateName: string;
   worktestLevel: string;
@@ -116,125 +114,107 @@ async function generateCertificatePDF(data: {
     format: "a4",
   });
 
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
   const margin = 20;
 
-  // Colors
-  const blue = { r: 102, g: 126, b: 234 };
-  const dark = { r: 45, g: 55, b: 72 };
-  const gray = { r: 113, g: 128, b: 150 };
-
-  // Outer border with proper margin
-  doc.setDrawColor(200, 200, 200);
+  // ── Outer border ─────────────────────────────────────────────
+  doc.setDrawColor("#CCCCCC");
   doc.setLineWidth(1);
-  doc.rect(margin, margin, pageWidth - margin * 2, pageHeight - margin * 2);
+  doc.rect(margin, margin, W - margin * 2, H - margin * 2);
 
-  // Header section
-  doc.setFillColor(blue.r, blue.g, blue.b);
-  doc.rect(margin, margin, pageWidth - margin * 2, 65, "F");
+  // ── Header background wash ─────────────────────────────────
+  doc.setFillColor(245, 245, 245);
+  doc.rect(margin + 1, margin + 1, W - (margin + 1) * 2, 50, "F");
 
-  // Title - properly centered
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(28);
-  doc.text("CERTIFICATE OF ACHIEVEMENT", pageWidth / 2, margin + 30, {
-    align: "center",
-  });
-
-  doc.setFontSize(14);
-  doc.text("3D Modeling Worktest Completion", pageWidth / 2, margin + 50, {
-    align: "center",
-  });
-
-  // Main content area - properly spaced and positioned
-  doc.setTextColor(gray.r, gray.g, gray.b);
-  doc.setFontSize(16);
-  doc.text("This is to certify that", pageWidth / 2, 110, { align: "center" });
-
-  // Name - with adequate space
-  doc.setTextColor(dark.r, dark.g, dark.b);
-  doc.setFontSize(36);
-  doc.text(data.candidateName, pageWidth / 2, 135, { align: "center" });
-
-  // Line under name - properly positioned below name
-  doc.setDrawColor(blue.r, blue.g, blue.b);
-  doc.setLineWidth(1);
-  doc.line(pageWidth / 2 - 60, 145, pageWidth / 2 + 60, 145);
-
-  // Achievement text - closer spacing
-  doc.setTextColor(dark.r, dark.g, dark.b);
-  doc.setFontSize(16);
-  doc.text(
-    `has successfully completed the ${data.worktestLevel} Level`,
-    pageWidth / 2,
-    165,
-    { align: "center" }
+  // ── Logo ────────────────────────────────────────────────────
+  const logoData = await getImageAsBase64(
+    "https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
   );
-
-  doc.setFontSize(15);
-  doc.text(
-    "3D Modeling Worktest with Outstanding Results",
-    pageWidth / 2,
-    175,
-    { align: "center" }
-  );
-
-  // Footer area - moved further down to avoid overlap
-  const footerStartY = pageHeight - margin - 35;
-
-  // Logo area - left side with proper margin
-  const logoUrl =
-    "https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png";
-  const logoBase64 = await getImageAsBase64(logoUrl);
-
-  if (logoBase64) {
-    try {
-      doc.addImage(logoBase64, "PNG", margin + 15, footerStartY - 5, 35, 14);
-    } catch (error) {
-      doc.setTextColor(blue.r, blue.g, blue.b);
-      doc.setFontSize(16);
-      doc.text("CharpstAR", margin + 15, footerStartY + 5);
-    }
-  } else {
-    doc.setTextColor(blue.r, blue.g, blue.b);
-    doc.setFontSize(16);
-    doc.text("CharpstAR", margin + 15, footerStartY + 5);
+  if (logoData) {
+    doc.addImage(logoData, "PNG", margin + 5, margin + 5, 40, 16);
   }
 
-  // Date - below logo, left aligned with proper spacing
-  doc.setTextColor(gray.r, gray.g, gray.b);
-  doc.setFontSize(10);
-  doc.text("Date:", margin + 15, footerStartY + 15);
-  doc.setTextColor(dark.r, dark.g, dark.b);
-  doc.setFontSize(11);
-  doc.text(data.completionDate, margin + 15, footerStartY + 23);
+  // ── Title & Subtitle ────────────────────────────────────────
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(30);
+  doc.setTextColor(33, 37, 41);
+  doc.text("CERTIFICATE OF ACHIEVEMENT", W / 2, margin + 20, {
+    align: "center",
+  });
 
-  // Certificate ID - centered at bottom
-  doc.setTextColor(gray.r, gray.g, gray.b);
-  doc.setFontSize(9);
+  // Subtitle underline
+  doc.setDrawColor("#666666");
+  doc.setLineWidth(0.5);
+  doc.line(W / 2 - 70, margin + 24, W / 2 + 70, margin + 24);
+
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(80, 85, 100);
+  doc.text("3D Modeling Worktest Completion", W / 2, margin + 34, {
+    align: "center",
+  });
+
+  // ── Body text ────────────────────────────────────────────────
+  let y = margin + 60;
+  doc.setFontSize(16);
+  doc.setTextColor(100, 108, 120);
+  doc.text("This is to certify that", W / 2, y, { align: "center" });
+
+  y += 20;
+  doc.setFont("times", "bolditalic");
+  doc.setFontSize(36);
+  doc.setTextColor(21, 21, 21);
+  doc.text(data.candidateName, W / 2, y, { align: "center" });
+
+  y += 10;
+  doc.setDrawColor(100, 108, 120);
+  doc.setLineWidth(0.7);
+  doc.line(W / 2 - 60, y, W / 2 + 60, y);
+
+  y += 15;
+  doc.setFont("times", "normal");
+  doc.setFontSize(16);
+  doc.setTextColor(33, 37, 41);
   doc.text(
-    `Certificate ID: ${data.certificateId}`,
-    pageWidth / 2,
-    footerStartY + 30,
+    `has successfully completed the ${data.worktestLevel} level`,
+    W / 2,
+    y,
     { align: "center" }
   );
 
-  // Signature area - right side with proper margin
-  const sigX = pageWidth - margin - 60;
-  const sigY = footerStartY + 5;
+  y += 10;
+  doc.setFontSize(14);
+  doc.setTextColor(80, 85, 100);
+  doc.text(
+    "3D Modeling Worktest with Outstanding Results",
+    W / 2,
+    y,
+    { align: "center" }
+  );
 
-  // Signature line
-  doc.setDrawColor(dark.r, dark.g, dark.b);
-  doc.setLineWidth(0.5);
-  doc.line(sigX, sigY, sigX + 50, sigY);
-
-  // Signature labels
-  doc.setTextColor(gray.r, gray.g, gray.b);
-  doc.setFontSize(9);
-  doc.text("Authorized Signature", sigX + 25, sigY + 8, { align: "center" });
-  doc.setTextColor(dark.r, dark.g, dark.b);
+  // ── Footer ───────────────────────────────────────────────────
+  const footerY = H - margin - 25;
+  doc.setFont("helvetica", "italic");
   doc.setFontSize(10);
-  doc.text("CharpstAR Team", sigX + 25, sigY + 16, { align: "center" });
+  doc.setTextColor(100, 108, 120);
+  doc.text(`Date: ${data.completionDate}`, margin + 10, footerY);
+  doc.text(`Certificate ID: ${data.certificateId}`, margin + 10, footerY + 6);
+
+  const sigX = W - margin - 60;
+  doc.setDrawColor(33, 37, 41);
+  doc.setLineWidth(0.5);
+  doc.line(sigX, footerY, sigX + 50, footerY);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(80, 85, 100);
+  doc.text("Authorized Signatory", sigX + 25, footerY + 6, {
+    align: "center",
+  });
+  doc.text("CharpstAR Team", sigX + 25, footerY + 12, { align: "center" });
+
+  // Optionally: watermark or seal can be added here
 
   return Buffer.from(doc.output("arraybuffer"));
 }
