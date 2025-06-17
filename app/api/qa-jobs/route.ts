@@ -555,7 +555,7 @@ Output *only* a single valid JSON object, for example:
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "gpt-4.1",
         stream: false,
         messages,
       }),
