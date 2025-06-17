@@ -191,7 +191,7 @@ export default function WorktestQA() {
     document.head.appendChild(script);
   }, []);
 
-  // Cleanup polling interval
+  // Cleanup polling interval and handle qaComplete state changes
   useEffect(() => {
     return () => {
       if (pollInterval) {
@@ -199,6 +199,15 @@ export default function WorktestQA() {
       }
     };
   }, [pollInterval]);
+
+  // Stop polling when QA is complete
+  useEffect(() => {
+    if (qaComplete && pollInterval) {
+      console.log("QA Complete - clearing polling interval");
+      clearInterval(pollInterval);
+      setPollInterval(null);
+    }
+  }, [qaComplete, pollInterval]);
 
   // Poll for job status
   useEffect(() => {
@@ -243,10 +252,13 @@ export default function WorktestQA() {
           setQaComplete(true);
           setLoadingQA(false);
 
+          // CRITICAL: Clear the polling interval immediately
           if (pollInterval) {
             clearInterval(pollInterval);
             setPollInterval(null);
           }
+
+          console.log("Polling stopped - job complete");
         } else if (data.status === "failed") {
           console.error("Job failed:", data.error);
           setError(data.error || "QA processing failed");
@@ -255,6 +267,8 @@ export default function WorktestQA() {
             clearInterval(pollInterval);
             setPollInterval(null);
           }
+        } else {
+          console.log(`Job still ${data.status}, continuing to poll...`);
         }
       } catch (err: any) {
         console.error("Error checking job status:", err);
@@ -269,14 +283,18 @@ export default function WorktestQA() {
 
     const interval = setInterval(checkJobStatus, 2000);
     setPollInterval(interval);
+
+    // Call immediately first time
     checkJobStatus();
 
+    // Cleanup function
     return () => {
-      if (pollInterval) {
-        clearInterval(pollInterval);
+      console.log("Cleaning up polling interval for job:", currentJobId);
+      if (interval) {
+        clearInterval(interval);
       }
     };
-  }, [currentJobId]);
+  }, [currentJobId]); // Remove pollInterval from dependencies to avoid recreation
 
   // Rotate through facts while loading
   useEffect(() => {
