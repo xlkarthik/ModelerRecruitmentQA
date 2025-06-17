@@ -107,18 +107,12 @@ class QAJobQueue {
     retryCount: number;
   }) {
     try {
-      const result = await processQAJob(
+      await processQAJob(
         job.jobId,
         job.renders,
         job.references,
         job.modelStats
       );
-
-      // Store the results globally so GET can access them
-      if (!global.completedJobs) {
-        global.completedJobs = new Map();
-      }
-      global.completedJobs.set(job.jobId, result.qaResults);
     } catch (error: any) {
       console.error(
         `Job ${job.jobId} failed (attempt ${job.retryCount + 1}):`,
@@ -266,9 +260,6 @@ type QAResults = {
 declare global {
   var completedJobs: Map<string, any> | undefined;
 }
-
-// Simple in-memory cache for QA results
-const qaResultsCache = new Map<string, any>();
 
 // Helper function to extract similarity scores and clean summary
 function extractSimilarityScores(summary: string) {
@@ -590,12 +581,13 @@ Output *only* a single valid JSON object, for example:
     // Clean the summary to remove similarity scores for display
     qaResults.summary = cleanSummary(qaResults.summary);
 
-    // Store QA results in database - ONLY UPDATE STATUS
+    // Store QA results in database
     const { data: updateData, error: updateError } = await supabase
       .from("qa_jobs")
       .update({
         status: "complete",
         end_time: new Date().toISOString(),
+        qa_results: JSON.stringify(qaResults),
       })
       .eq("id", jobId)
       .select();
