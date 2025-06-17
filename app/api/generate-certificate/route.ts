@@ -166,7 +166,7 @@ async function generateCertificatePDF(data: {
   });
 
   // ── Body text ────────────────────────────────────────────────
-  let y = subtitleY + 20;
+  let y = subtitleY + 26;
   doc.setFontSize(16);
   doc.setTextColor(100, 108, 120);
   doc.text("This is to certify that", W / 2, y, { align: "center" });
