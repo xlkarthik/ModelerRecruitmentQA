@@ -823,6 +823,11 @@ export async function GET(request: NextRequest) {
       };
     }
 
+    console.log(
+      `🔍 Returning job ${jobId} with qaResults:`,
+      qaResults ? "YES" : "NO"
+    );
+
     return NextResponse.json({
       jobId,
       status: job.status,
