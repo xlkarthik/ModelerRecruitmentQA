@@ -579,21 +579,22 @@ Output *only* a single valid JSON object, for example:
     // Clean the summary to remove similarity scores for display
     qaResults.summary = cleanSummary(qaResults.summary);
 
-    // Store QA results in database - SIMPLE VERSION
+    // Store QA results in database - ONLY UPDATE STATUS
     const { data: updateData, error: updateError } = await supabase
       .from("qa_jobs")
       .update({
         status: "complete",
         end_time: new Date().toISOString(),
-        // Store the results as a JSON string in a text field - add this column to your DB
-        results: JSON.stringify(qaResults),
       })
       .eq("id", jobId)
       .select();
 
     if (updateError) {
-      console.error(`❌ Database update error:`, updateError);
-      // Continue anyway - we'll use cache
+      console.error(
+        `❌ Failed to update job ${jobId} in database:`,
+        updateError
+      );
+      throw new Error(`Database update failed: ${updateError.message}`);
     }
 
     console.log(`✅ Successfully updated job ${jobId} status to complete`);
@@ -602,8 +603,7 @@ Output *only* a single valid JSON object, for example:
     // Store results in memory cache
     qaResultsCache.set(jobId, qaResults);
     console.log(
-      `Stored QA results for job ${jobId} in cache:`,
-      qaResults.summary
+      `📝 Stored QA results for job ${jobId} in cache. Summary: "${qaResults.summary}"`
     );
 
     return { jobId, status: "complete", qaResults };
