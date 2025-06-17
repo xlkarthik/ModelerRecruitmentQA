@@ -124,7 +124,7 @@ async function generateCertificatePDF(data: {
   doc.setDrawColor("#CCCCCC").setLineWidth(1);
   doc.rect(margin, margin, W - margin * 2, H - margin * 2);
 
-  // Header background wash
+  // Header wash
   doc.setFillColor(245, 245, 245);
   doc.rect(margin + 1, margin + 1, W - (margin + 1) * 2, 70, "F");
 
@@ -139,7 +139,7 @@ async function generateCertificatePDF(data: {
   if (logoData) doc.addImage(logoData, "PNG", logoX, logoY, logoW, logoH);
 
   // Title & subtitle (pushed down)
-  const titleY = logoY + logoH + 14; // more gap
+  const titleY = logoY + logoH + 16; // extra gap
   const subtitleY = titleY + 14;
 
   doc.setFont("helvetica", "bold").setFontSize(30).setTextColor(33);
@@ -181,7 +181,7 @@ async function generateCertificatePDF(data: {
     align: "center",
   });
 
-  // Instruction block (above footer)
+  // Instruction block (15mm above footer)
   const footerY = H - margin - 25;
   const instructionY = footerY - 15;
   doc.setFont("helvetica", "italic").setFontSize(12).setTextColor(33);
