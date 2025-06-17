@@ -1245,7 +1245,7 @@ export default function WorktestQA() {
                       Congratulations! Your model has been approved.
                     </h3>
                     <p className="text-green-700 mt-1">
-                      Your 3D model meets all the required standards for the{" "}
+                      Your 3D model meets the required standards for the{" "}
                       {selectedDifficulty} worktest. You can now generate your
                       certificate of completion.
                     </p>
