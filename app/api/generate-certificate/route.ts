@@ -151,7 +151,7 @@ async function generateCertificatePDF(data: {
       // Achievement text
       doc
         .fontSize(20)
-        .font("fontsRoboto-Regular.ttf")
+        .font("fonts\Roboto-Regular.ttf")
         .text(
           `has successfully completed the ${data.worktestLevel} LEVEL`,
           60,
