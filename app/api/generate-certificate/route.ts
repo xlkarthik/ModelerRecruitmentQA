@@ -161,7 +161,7 @@ async function generateCertificatePDF(data: {
   doc.setLineWidth(1);
   doc.line(pageWidth / 2 - 60, 145, pageWidth / 2 + 60, 145);
 
-  // Achievement text - well spaced below the line
+  // Achievement text - closer spacing
   doc.setTextColor(dark.r, dark.g, dark.b);
   doc.setFontSize(16);
   doc.text(
@@ -175,7 +175,7 @@ async function generateCertificatePDF(data: {
   doc.text(
     "3D Modeling Worktest with Outstanding Results",
     pageWidth / 2,
-    180,
+    175,
     { align: "center" }
   );
 
