@@ -1,7 +1,188 @@
+// First, install the library: npm install @react-pdf/renderer
+
 // app/api/generate-certificate/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "../../../lib/supabase";
-import PDFDocument from "pdfkit";
+import React from "react";
+import {
+  Document,
+  Page,
+  Text,
+  View,
+  StyleSheet,
+  pdf,
+  Font,
+} from "@react-pdf/renderer";
+
+// Register fonts (optional - you can skip this to use default fonts)
+// Font.register({
+//   family: 'Open Sans',
+//   src: 'https://fonts.gstatic.com/s/opensans/v18/mem8YaGs126MiZpBA-UFVZ0e.ttf'
+// });
+
+const styles = StyleSheet.create({
+  page: {
+    backgroundColor: "white",
+    padding: 60,
+    fontFamily: "Helvetica",
+  },
+  header: {
+    backgroundColor: "#667eea",
+    padding: 40,
+    marginBottom: 40,
+    borderRadius: 8,
+  },
+  title: {
+    fontSize: 36,
+    color: "white",
+    textAlign: "center",
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  subtitle: {
+    fontSize: 18,
+    color: "white",
+    textAlign: "center",
+  },
+  certifyText: {
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 20,
+    color: "#2d3748",
+  },
+  candidateName: {
+    fontSize: 42,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 30,
+    color: "#2d3748",
+  },
+  achievementText: {
+    fontSize: 20,
+    textAlign: "center",
+    marginBottom: 10,
+    color: "#2d3748",
+  },
+  scoresContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginVertical: 40,
+  },
+  scoreItem: {
+    alignItems: "center",
+  },
+  scoreValue: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#38a169",
+    marginBottom: 5,
+  },
+  scoreLabel: {
+    fontSize: 12,
+    color: "#718096",
+    textTransform: "uppercase",
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    marginTop: 60,
+  },
+  footerLeft: {
+    flex: 1,
+  },
+  footerRight: {
+    flex: 1,
+    alignItems: "center",
+  },
+  dateText: {
+    fontSize: 14,
+    color: "#718096",
+    marginBottom: 5,
+  },
+  certificateId: {
+    fontSize: 10,
+    color: "#718096",
+  },
+  signatureLine: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#718096",
+    width: 150,
+    marginBottom: 10,
+  },
+  signatureText: {
+    fontSize: 12,
+    textAlign: "center",
+    color: "#718096",
+  },
+  companyLogo: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#667eea",
+  },
+});
+
+const CertificateDocument = ({ data }: { data: any }) => (
+  <Document>
+    <Page size={[842, 595]} style={styles.page} orientation="landscape">
+      <View style={styles.header}>
+        <Text style={styles.title}>CERTIFICATE OF ACHIEVEMENT</Text>
+        <Text style={styles.subtitle}>3D Modeling Worktest Completion</Text>
+      </View>
+
+      <Text style={styles.certifyText}>This is to certify that</Text>
+
+      <Text style={styles.candidateName}>{data.candidateName}</Text>
+
+      <Text style={styles.achievementText}>
+        has successfully completed the {data.worktestLevel} LEVEL
+      </Text>
+      <Text style={styles.achievementText}>
+        3D Modeling Worktest with outstanding results
+      </Text>
+
+      <View style={styles.scoresContainer}>
+        {[
+          {
+            label: "Silhouette",
+            value: data.similarityScores.silhouette || "N/A",
+          },
+          {
+            label: "Proportion",
+            value: data.similarityScores.proportion || "N/A",
+          },
+          {
+            label: "Color/Material",
+            value: data.similarityScores.colorMaterial || "N/A",
+          },
+          { label: "Overall", value: data.similarityScores.overall || "N/A" },
+        ].map((score, index) => (
+          <View key={index} style={styles.scoreItem}>
+            <Text style={styles.scoreValue}>
+              {score.value}
+              {typeof score.value === "number" ? "%" : ""}
+            </Text>
+            <Text style={styles.scoreLabel}>{score.label}</Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.footer}>
+        <View style={styles.footerLeft}>
+          <Text style={styles.companyLogo}>CharpstAR</Text>
+          <Text style={styles.dateText}>Date: {data.completionDate}</Text>
+          <Text style={styles.certificateId}>
+            Certificate ID: {data.certificateId}
+          </Text>
+        </View>
+        <View style={styles.footerRight}>
+          <View style={styles.signatureLine} />
+          <Text style={styles.signatureText}>CharpstAR Team</Text>
+        </View>
+      </View>
+    </Page>
+  </Document>
+);
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,7 +231,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate PDF certificate
-    const pdfBuffer = await generateCertificatePDF({
+    const certificateData = {
       candidateName,
       worktestLevel: worktestLevel.toUpperCase(),
       completionDate: new Date().toLocaleDateString("en-GB", {
@@ -61,7 +242,11 @@ export async function POST(request: NextRequest) {
       jobId,
       certificateId: `CSTAR-${worktestLevel.toUpperCase()}-${Date.now()}`,
       similarityScores: qaResults.similarityScores || {},
-    });
+    };
+
+    const pdfBuffer = await pdf(
+      <CertificateDocument data={certificateData} />
+    ).toBuffer();
 
     // Return PDF as download
     return new NextResponse(pdfBuffer, {
@@ -81,164 +266,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-async function generateCertificatePDF(data: {
-  candidateName: string;
-  worktestLevel: string;
-  completionDate: string;
-  jobId: string;
-  certificateId: string;
-  similarityScores: any;
-}): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    try {
-      const doc = new PDFDocument({
-        size: [842, 595], // A4 landscape
-        margins: { top: 60, bottom: 60, left: 60, right: 60 },
-      });
-
-      const buffers: Buffer[] = [];
-      doc.on("data", buffers.push.bind(buffers));
-      doc.on("end", () => resolve(Buffer.concat(buffers)));
-      doc.on("error", reject);
-
-      // Colors
-      const primaryBlue = "#667eea";
-      const darkGray = "#2d3748";
-      const lightGray = "#718096";
-      const green = "#38a169";
-
-      // Header with gradient background
-      doc.rect(0, 0, 842, 150).fill(primaryBlue);
-
-      // Title - using default fonts only
-      doc
-        .fillColor("white")
-        .fontSize(36)
-        .text("CERTIFICATE OF ACHIEVEMENT", 60, 40, {
-          align: "center",
-          width: 722,
-        });
-
-      doc.fontSize(18).text("3D Modeling Worktest Completion", 60, 85, {
-        align: "center",
-        width: 722,
-      });
-
-      // Main content area
-      doc.fillColor(darkGray);
-
-      // "This is to certify that"
-      doc.fontSize(16).text("This is to certify that", 60, 200, {
-        align: "center",
-        width: 722,
-      });
-
-      // Candidate name (large)
-      doc
-        .fontSize(42)
-        .text(data.candidateName, 60, 230, { align: "center", width: 722 });
-
-      // Achievement text
-      doc
-        .fontSize(20)
-        .text(
-          `has successfully completed the ${data.worktestLevel} LEVEL`,
-          60,
-          290,
-          { align: "center", width: 722 }
-        );
-
-      doc.text("3D Modeling Worktest with outstanding results", 60, 320, {
-        align: "center",
-        width: 722,
-      });
-
-      // Scores section
-      const scoresY = 380;
-      const scoreWidth = 150;
-      const scoreSpacing = 180;
-      const startX =
-        60 + (722 - (4 * scoreWidth + 3 * (scoreSpacing - scoreWidth))) / 2;
-
-      const scores = [
-        {
-          label: "Silhouette",
-          value: data.similarityScores.silhouette || "N/A",
-        },
-        {
-          label: "Proportion",
-          value: data.similarityScores.proportion || "N/A",
-        },
-        {
-          label: "Color/Material",
-          value: data.similarityScores.colorMaterial || "N/A",
-        },
-        { label: "Overall", value: data.similarityScores.overall || "N/A" },
-      ];
-
-      scores.forEach((score, index) => {
-        const x = startX + index * scoreSpacing;
-
-        // Score value
-        doc
-          .fillColor(green)
-          .fontSize(24)
-          .text(
-            `${score.value}${typeof score.value === "number" ? "%" : ""}`,
-            x,
-            scoresY,
-            {
-              align: "center",
-              width: scoreWidth,
-            }
-          );
-
-        // Score label
-        doc
-          .fillColor(lightGray)
-          .fontSize(12)
-          .text(score.label.toUpperCase(), x, scoresY + 35, {
-            align: "center",
-            width: scoreWidth,
-          });
-      });
-
-      // Footer section
-      const footerY = 480;
-
-      // Date
-      doc
-        .fillColor(lightGray)
-        .fontSize(14)
-        .text(`Date: ${data.completionDate}`, 60, footerY);
-
-      // Certificate ID
-      doc
-        .fontSize(10)
-        .text(`Certificate ID: ${data.certificateId}`, 60, footerY + 20);
-
-      // Signature line
-      doc
-        .moveTo(600, footerY + 30)
-        .lineTo(780, footerY + 30)
-        .stroke();
-
-      doc.fontSize(12).text("CharpstAR Team", 600, footerY + 40, {
-        align: "center",
-        width: 180,
-      });
-
-      // Company logo area (text for now)
-      doc
-        .fillColor(primaryBlue)
-        .fontSize(24)
-        .text("CharpstAR", 60, footerY + 20);
-
-      doc.end();
-    } catch (error) {
-      reject(error);
-    }
-  });
 }
