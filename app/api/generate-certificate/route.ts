@@ -125,24 +125,25 @@ async function generateCertificatePDF(data: {
   doc.setLineWidth(1);
   doc.rect(margin, margin, W - margin * 2, H - margin * 2);
 
-  // ── Header background wash ─────────────────────────────────
+  // ── Header background wash (taller to fit larger logo + gap) ─
   doc.setFillColor(245, 245, 245);
-  doc.rect(margin + 1, margin + 1, W - (margin + 1) * 2, 60, "F");
+  doc.rect(margin + 1, margin + 1, W - (margin + 1) * 2, 70, "F");
 
-  // ── Logo (centered at top) ─────────────────────────────────
+  // ── Logo (wider, centered at top) ───────────────────────────
   const logoData = await getImageAsBase64(
     "https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
   );
-  const logoWidth = 40;
-  const logoHeight = 16;
+  const logoWidth = 60;
+  const logoHeight = 24;
   const logoX = (W - logoWidth) / 2;
   const logoY = margin + 5;
   if (logoData) {
     doc.addImage(logoData, "PNG", logoX, logoY, logoWidth, logoHeight);
   }
 
-  // ── Title & Subtitle (moved below logo) ────────────────────
-  const titleY = logoY + logoHeight + 8; // 8mm gap beneath logo
+  // ── Title & Subtitle (pushed further down) ──────────────────
+  const gapAfterLogo = 12; // increased gap
+  const titleY = logoY + logoHeight + gapAfterLogo;
   const subtitleY = titleY + 14;
 
   doc.setFont("helvetica", "bold");
