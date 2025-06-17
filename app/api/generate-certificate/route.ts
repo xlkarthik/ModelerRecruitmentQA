@@ -148,7 +148,7 @@ async function generatePassPDF(data: {
   doc.text("QA PASS", W / 2, titleY, { align: "center" });
 
   doc.setDrawColor("#666666").setLineWidth(0.5);
-  doc.line(W / 2 - 50, titleY + 4, W / 2 + 50, titleY + 4);
+  doc.line(W / 2 - 30, titleY + 4, W / 2 + 50, titleY + 4);
 
   doc.setFont("helvetica", "normal").setFontSize(14).setTextColor(80);
   doc.text("3D Modeling Worktest Completion", W / 2, subtitleY, {
