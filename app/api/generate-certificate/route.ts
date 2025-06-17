@@ -1,4 +1,3 @@
-// First install: npm install jspdf
 
 // app/api/generate-certificate/route.ts
 import { NextRequest, NextResponse } from "next/server";
