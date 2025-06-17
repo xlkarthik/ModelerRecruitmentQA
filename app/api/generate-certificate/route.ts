@@ -182,7 +182,7 @@ async function generateCertificatePDF(data: {
   //   });
 
   // Instruction block: place 30mm above footer
-  const footerY = H - margin - 25;
+  const footerY = H - margin - 20;
   const instructionY = footerY - 20;
   doc.setFont("helvetica", "italic").setFontSize(12).setTextColor(33);
   const instructionLines = [
