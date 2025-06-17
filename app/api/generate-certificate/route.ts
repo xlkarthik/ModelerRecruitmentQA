@@ -198,7 +198,7 @@ async function generatePassPDF(data: {
   doc.text(lines, W / 2, y, {
     align: "center",
     maxWidth: W - margin * 2,
-    lineHeightFactor: 1.5,
+    lineHeightFactor: 1.7,
   });
 
   // Footer
