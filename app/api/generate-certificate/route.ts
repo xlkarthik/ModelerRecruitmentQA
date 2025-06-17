@@ -104,13 +104,13 @@ function generateCertificatePDF(data: {
   const pageHeight = doc.internal.pageSize.getHeight();
 
   // Colors (jsPDF uses RGB values 0-255)
-  const primaryBlue = [102, 126, 234];
-  const darkGray = [45, 55, 72];
-  const lightGray = [113, 128, 150];
-  const green = [56, 161, 105];
+  const primaryBlue = { r: 102, g: 126, b: 234 };
+  const darkGray = { r: 45, g: 55, b: 72 };
+  const lightGray = { r: 113, g: 128, b: 150 };
+  const green = { r: 56, g: 161, b: 105 };
 
   // Header background
-  doc.setFillColor(...primaryBlue);
+  doc.setFillColor(primaryBlue.r, primaryBlue.g, primaryBlue.b);
   doc.rect(0, 0, pageWidth, 50, "F");
 
   // Title
@@ -126,7 +126,7 @@ function generateCertificatePDF(data: {
   });
 
   // Main content
-  doc.setTextColor(...darkGray);
+  doc.setTextColor(darkGray.r, darkGray.g, darkGray.b);
 
   // "This is to certify that"
   doc.setFontSize(12);
