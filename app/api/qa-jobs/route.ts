@@ -252,10 +252,11 @@ type QAResults = {
   };
 };
 
-// Helper function to extract similarity scores from GPT summary
+// Helper function to extract similarity scores from GPT summary - IMPROVED VERSION
 function extractSimilarityScores(summary: string) {
   const scores: any = {};
 
+  // Primary patterns - look for explicit percentage format
   const patterns: Record<string, RegExp> = {
     silhouette: /silhouette[:\s]*(\d+)%/i,
     proportion: /proportion[:\s]*(\d+)%/i,
@@ -263,6 +264,7 @@ function extractSimilarityScores(summary: string) {
     overall: /overall[:\s]*(\d+)%/i,
   };
 
+  // Alternative patterns - percentage before keyword
   const alternativePatterns: Record<string, RegExp> = {
     silhouette: /(\d+)%[^,]*silhouette/i,
     proportion: /(\d+)%[^,]*proportion/i,
@@ -270,6 +272,7 @@ function extractSimilarityScores(summary: string) {
     overall: /(\d+)%[^,]*overall/i,
   };
 
+  // Try to extract scores using both pattern sets
   for (const [key, pattern] of Object.entries(patterns)) {
     let match = summary.match(pattern);
     if (!match) {
@@ -280,7 +283,99 @@ function extractSimilarityScores(summary: string) {
     }
   }
 
-  console.log("Extracted similarity scores:", scores);
+  // If no explicit scores found, try to infer from descriptive text
+  if (Object.keys(scores).length === 0) {
+    console.log("No explicit scores found, attempting to infer from description...");
+    
+    // Look for descriptive words and map to approximate scores
+    const descriptorMapping = {
+      'highly accurate': 95,
+      'very accurate': 90,
+      'accurate': 85,
+      'mostly accurate': 80,
+      'close': 75,
+      'similar': 70,
+      'somewhat similar': 65,
+      'different': 50,
+      'very different': 30,
+      'completely different': 10
+    };
+
+    // Check for silhouette descriptors
+    const silhouetteDescriptors = [
+      'silhouette.*highly accurate',
+      'silhouette.*very accurate', 
+      'silhouette.*accurate',
+      'proportions.*highly accurate',
+      'proportions.*very accurate',
+      'proportions.*accurate'
+    ];
+
+    for (const descriptor of silhouetteDescriptors) {
+      const match = summary.match(new RegExp(descriptor, 'i'));
+      if (match) {
+        if (match[0].includes('highly accurate')) scores.silhouette = 95;
+        else if (match[0].includes('very accurate')) scores.silhouette = 90;
+        else if (match[0].includes('accurate')) scores.silhouette = 85;
+        break;
+      }
+    }
+
+    // Check for proportion descriptors
+    const proportionDescriptors = [
+      'proportions.*highly accurate',
+      'proportions.*very accurate',
+      'proportions.*accurate',
+      'proportions.*close',
+      'proportions.*similar'
+    ];
+
+    for (const descriptor of proportionDescriptors) {
+      const match = summary.match(new RegExp(descriptor, 'i'));
+      if (match) {
+        if (match[0].includes('highly accurate')) scores.proportion = 95;
+        else if (match[0].includes('very accurate')) scores.proportion = 90;
+        else if (match[0].includes('accurate')) scores.proportion = 85;
+        else if (match[0].includes('close')) scores.proportion = 75;
+        else if (match[0].includes('similar')) scores.proportion = 70;
+        break;
+      }
+    }
+
+    // Check for color/material issues
+    const colorIssues = [
+      'wood tone.*incorrect',
+      'color.*different',
+      'material.*different',
+      'finish.*incorrect',
+      'texture.*different'
+    ];
+
+    let hasColorIssues = false;
+    for (const issue of colorIssues) {
+      if (summary.match(new RegExp(issue, 'i'))) {
+        hasColorIssues = true;
+        break;
+      }
+    }
+
+    if (hasColorIssues) {
+      scores.colorMaterial = 70; // Moderate score due to color/material issues
+    } else if (scores.silhouette || scores.proportion) {
+      scores.colorMaterial = 85; // Assume good if no explicit issues mentioned
+    }
+
+    // Calculate overall as average if individual scores exist
+    if (scores.silhouette && scores.proportion && scores.colorMaterial) {
+      scores.overall = Math.round((scores.silhouette + scores.proportion + scores.colorMaterial) / 3);
+    } else if (scores.silhouette && scores.proportion) {
+      scores.overall = Math.round((scores.silhouette + scores.proportion) / 2);
+    }
+
+    console.log("Inferred scores from descriptive text:", scores);
+  }
+
+  console.log("Final extracted similarity scores:", scores);
   console.log("From summary:", summary);
 
   return scores;
@@ -361,16 +456,50 @@ async function processQAJob(
         "‼️IMPORTANT‼️\n" +
         "6. Provide a pixel bbox [x,y,width,height] relative to the 3D Model image to indicate where to annotate.\n" +
         "7. Assign severity: 'low', 'medium', or 'high'.\n" +
-        "8. SIMILARITY SCORING - BE EXTREMELY PRECISE:\n" +
+        "8. SIMILARITY SCORING - BE EXTREMELY PRECISE AND ALWAYS INCLUDE EXACT PERCENTAGES:\n" +
         "   • SILHOUETTE: Compare overall shape, outline, and form. Ignore color/texture. Perfect match = 100%, completely different shape = 0%\n" +
         "   • PROPORTION: Compare relative sizes of parts (seat vs backrest, arm width vs seat width, leg thickness, etc.). Be very strict - even 5% size differences should reduce score significantly\n" +
         "   • COLOR/MATERIAL: Compare exact colors, textures, materials, surface finish. Small color shifts should significantly impact score. Perfect color match = 100%\n" +
         "   • OVERALL: Weighted average considering all factors. Be conservative - only award high scores if model is extremely close to reference\n" +
         "   • SCORING SCALE: 98-100% = nearly perfect match, 90-97% = very close with only tiny differences, 75-89% = good match but clear differences visible, 50-74% = moderate similarity with significant differences, 25-49% = poor match with major differences, <25% = completely different\n" +
-        "   • Format: 'Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.' If ALL scores are >90%, mark status as 'Approved', otherwise mark as 'Not Approved'.\n" +
+        "   ‼️ MANDATORY FORMAT ‼️: You MUST end your summary with this EXACT format: 'Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.' Replace X with actual numbers. This is REQUIRED.\n" +
+        "   • If ALL scores are >90%, mark status as 'Approved', otherwise mark as 'Not Approved'.\n" +
         "‼️IMPORTANT‼️\n" +
         "9. NEVER repeat the same issue across multiple views - report each unique problem only once.\n" +
         "‼️IMPORTANT‼️\n" +
+        "10. Do not swap renderIndex and referenceIndex.\n" +
+        "11. Group similar issues together and choose the best view to report them.\n" +
+        "12. Before adding an issue, check if you've already reported the same problem - if yes, skip it.\n\n" +
+        "‼️ INCORRECT EXAMPLES (DO NOT DO THESE) ‼️\n" +
+        "• '3D 3D Model shows side logo as \"NGS\"; reference shows different positioning and size' - WRONG! These are different views\n" +
+        "• 'Render shows the product from the front; reference shows it from the back' - WRONG! Skip this comparison\n" +
+        "• 'The button is visible in the 3D Model but not in the reference' - WRONG! Different perspectives\n" +
+        "• Reporting 'cushion color is light gray vs off-white' for multiple views - WRONG! Report once only\n" +
+        "• Giving 95% for color when there's an obvious color difference - WRONG! Be much stricter\n" +
+        "• Ending summary without exact percentage format - WRONG! Always include 'Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.'\n\n" +
+        "‼️ CORRECT EXAMPLES ‼️\n" +
+        "• '3D Model shows yellow cushion fabric; reference shows white cushion fabric' - CORRECT (same view, actual difference, reported once)\n" +
+        "• '3D Model shows smoother texture; reference shows more detailed grain' - CORRECT (same view, actual difference)\n" +
+        "• Cushion color noticeably different = Color/Material score should be 60-75%, not 85%\n" +
+        "• Small proportion differences = Proportion score should be 75-85%, not 95%\n" +
+        "• Summary ending: 'The model shows good accuracy in shape and proportions. Similarity scores: Silhouette 92%, Proportion 88%, Color/Material 73%, Overall 84%.' - CORRECT format\n\n" +
+        "Output *only* a single valid JSON object, for example:\n" +
+        "{\n" +
+        '  "differences": [\n' +
+        "    {\n" +
+        '      "renderIndex": 0,\n' +
+        '      "referenceIndex": 1,\n' +
+        '      "issues": [\n' +
+        '        "3D Model shows light gray cushion fabric; reference shows off-white cushion fabric. Adjust material color to match reference."\n' +
+        "      ],\n" +
+        '      "bbox": [120, 240, 300, 180],\n' +
+        '      "severity": "medium"\n' +
+        "    }\n" +
+        "  ],\n" +
+        '  "summary": "The model shows good structural accuracy but has color variations in the cushioning and wood finish. The rattan details could be more refined. Similarity scores: Silhouette 92%, Proportion 88%, Color/Material 73%, Overall 84%.",\n' +
+        '  "status": "Not Approved"\n' +
+        "}",
+    };n" +
         "10. Do not swap renderIndex and referenceIndex.\n" +
         "11. Group similar issues together and choose the best view to report them.\n" +
         "12. Before adding an issue, check if you've already reported the same problem - if yes, skip it.\n\n" +
@@ -429,7 +558,7 @@ async function processQAJob(
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "gpt-4.1",
         stream: false,
         messages,
       }),
