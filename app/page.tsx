@@ -1279,95 +1279,28 @@ export default function WorktestQA() {
                 {qaResults?.differences && qaResults.differences.length > 0 && (
                   <div className="space-y-4">
                     <h4 className="font-medium text-gray-800">
-                      Detailed Issues:
+                      Issues to Address:
                     </h4>
-                    {qaResults.differences.map((diff, index) => (
-                      <div
-                        key={index}
-                        className={`p-4 rounded-lg border-l-4 ${
-                          diff.severity === "high"
-                            ? "border-red-500 bg-red-50"
-                            : diff.severity === "medium"
-                            ? "border-yellow-500 bg-yellow-50"
-                            : "border-blue-500 bg-blue-50"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-gray-600">
-                            Render {diff.renderIndex + 1} vs Reference{" "}
-                            {diff.referenceIndex + 1}
-                          </span>
-                          <span
-                            className={`px-2 py-1 rounded text-xs font-medium ${
-                              diff.severity === "high"
-                                ? "bg-red-100 text-red-800"
-                                : diff.severity === "medium"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-blue-100 text-blue-800"
-                            }`}
-                          >
-                            {diff.severity} severity
-                          </span>
-                        </div>
-                        <ul className="space-y-1">
+                    <div className="space-y-2">
+                      {qaResults.differences.map((diff, index) => (
+                        <div key={index}>
                           {diff.issues.map((issue, issueIndex) => (
-                            <li
+                            <div
                               key={issueIndex}
-                              className="text-sm text-gray-700"
+                              className="p-3 bg-gray-50 border-l-4 border-gray-400 rounded"
                             >
-                              • {issue}
-                            </li>
+                              <p className="text-sm text-gray-700">• {issue}</p>
+                            </div>
                           ))}
-                        </ul>
-                      </div>
-                    ))}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
             )}
 
-            {/* Similarity Scores */}
-            {qaResults?.similarityScores && (
-              <div className="p-6 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Similarity Analysis
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {Object.entries(qaResults.similarityScores).map(
-                    ([key, value]) => {
-                      if (value === undefined) return null;
-                      const label =
-                        key === "colorMaterial"
-                          ? "Color/Material"
-                          : key.charAt(0).toUpperCase() + key.slice(1);
-                      const percentage = Math.round(value);
-                      const isGood = percentage >= 90;
-
-                      return (
-                        <div key={key} className="text-center">
-                          <div
-                            className={`text-2xl font-bold ${
-                              isGood ? "text-green-600" : "text-red-600"
-                            }`}
-                          >
-                            {percentage}%
-                          </div>
-                          <div className="text-sm text-gray-600">{label}</div>
-                          <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                            <div
-                              className={`h-2 rounded-full ${
-                                isGood ? "bg-green-500" : "bg-red-500"
-                              }`}
-                              style={{ width: `${percentage}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      );
-                    }
-                  )}
-                </div>
-              </div>
-            )}
+            {/* Similarity Scores - REMOVED */}
 
             {/* Image Comparison Section */}
             <div className="p-6">
