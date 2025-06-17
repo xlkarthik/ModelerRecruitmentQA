@@ -186,7 +186,7 @@ async function generatePassPDF(data: {
   doc.line(W / 2 - 60, y, W / 2 + 60, y);
 
   // Instruction block (30mm above footer)
-  const footerY = H - margin - 25;
+  const footerY = H - margin - 30;
   const instructionY = footerY - 30;
   doc.setFont("helvetica", "italic").setFontSize(12).setTextColor(33);
   const lines = [
