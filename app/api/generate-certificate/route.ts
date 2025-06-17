@@ -190,7 +190,8 @@ async function generatePassPDF(data: {
   const instructionY = footerY - 30;
   doc.setFont("helvetica", "italic").setFontSize(12).setTextColor(33);
   const lines = [
-    `has successfully completed the initial ${data.worktestLevel} level worktest!`,
+    `has successfully submitted a 3D model that meets our basic technical requirements for human review.
+!`,
     `Please download this pass and email it along with your exported .glb model`,
     `to recruitment@charpstar.com for further review.`,
   ];
