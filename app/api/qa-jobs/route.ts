@@ -107,12 +107,18 @@ class QAJobQueue {
     retryCount: number;
   }) {
     try {
-      await processQAJob(
+      const result = await processQAJob(
         job.jobId,
         job.renders,
         job.references,
         job.modelStats
       );
+
+      // Store the results globally so GET can access them
+      if (!global.completedJobs) {
+        global.completedJobs = new Map();
+      }
+      global.completedJobs.set(job.jobId, result.qaResults);
     } catch (error: any) {
       console.error(
         `Job ${job.jobId} failed (attempt ${job.retryCount + 1}):`,
@@ -578,12 +584,6 @@ Output *only* a single valid JSON object, for example:
 
     // Clean the summary to remove similarity scores for display
     qaResults.summary = cleanSummary(qaResults.summary);
-
-    // Store results in memory cache FIRST
-    qaResultsCache.set(jobId, qaResults);
-    console.log(
-      `📝 Stored QA results for job ${jobId} in cache. Summary: "${qaResults.summary}"`
-    );
 
     // Store QA results in database - ONLY UPDATE STATUS
     const { data: updateData, error: updateError } = await supabase
