@@ -208,8 +208,8 @@ async function generatePassPDF(data: {
   doc.text(`Pass ID: ${data.certificateId}`, margin + 10, footerY + 6);
 
   const sigX = W - margin - 60;
-  doc.setDrawColor(33).setLineWidth(0.5);
-  doc.line(sigX, footerY, sigX + 50, footerY);
+  //   doc.setDrawColor(33).setLineWidth(0.5);
+  //   doc.line(sigX, footerY, sigX + 50, footerY);
 
   doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(80);
   //   doc.text("Authorized Signatory", sigX + 25, footerY + 6, { align: "center" });
