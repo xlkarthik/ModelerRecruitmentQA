@@ -145,7 +145,7 @@ async function generatePassPDF(data: {
   const subtitleY = titleY + 14;
 
   doc.setFont("helvetica", "bold").setFontSize(30).setTextColor(33);
-  const titleText = "WORKTEST CLEARANCE"; // or whatever heading you choose
+  const titleText = "Automated QA Pass"; // or whatever heading you choose
   doc
     .setFont("helvetica", "bold")
     .setFontSize(30)
