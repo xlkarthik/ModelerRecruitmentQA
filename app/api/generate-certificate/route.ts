@@ -41,16 +41,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Only approved models get certificates
+    // Only approved models get passes
     if (!qaResults || qaResults.status !== "Approved") {
       return NextResponse.json(
-        { error: "Certificate can only be generated for approved models" },
+        { error: "Pass can only be generated for approved models" },
         { status: 400 }
       );
     }
 
-    // Build certificate data
-    const certData = {
+    // Build pass data
+    const passData = {
       candidateName,
       worktestLevel: worktestLevel.toUpperCase(),
       completionDate: new Date().toLocaleDateString("en-GB", {
@@ -58,19 +58,18 @@ export async function POST(request: NextRequest) {
         month: "long",
         year: "numeric",
       }),
-      jobId,
-      certificateId: `CSTAR-${worktestLevel.toUpperCase()}-${Date.now()}`,
+      certificateId: `PASS-${worktestLevel.toUpperCase()}-${Date.now()}`,
       similarityScores: qaResults.similarityScores || {},
     };
 
     // Generate PDF
-    const pdfBuffer = await generateCertificatePDF(certData);
+    const pdfBuffer = await generatePassPDF(passData);
 
     // Return as download
     return new NextResponse(pdfBuffer, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="CharpstAR_Certificate_${candidateName.replace(
+        "Content-Disposition": `attachment; filename="CharpstAR_QA_Pass_${candidateName.replace(
           /\s+/g,
           "_"
         )}_${worktestLevel.toUpperCase()}.pdf"`,
@@ -78,9 +77,9 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err: any) {
-    console.error("Certificate generation error:", err);
+    console.error("Pass generation error:", err);
     return NextResponse.json(
-      { error: err.message || "Failed to generate certificate" },
+      { error: err.message || "Failed to generate pass" },
       { status: 500 }
     );
   }
@@ -101,12 +100,11 @@ async function getImageAsBase64(url: string): Promise<string | null> {
   }
 }
 
-// Core: builds the certificate PDF
-async function generateCertificatePDF(data: {
+// Core: builds the QA Pass PDF
+async function generatePassPDF(data: {
   candidateName: string;
   worktestLevel: string;
   completionDate: string;
-  jobId: string;
   certificateId: string;
   similarityScores: any;
 }): Promise<Buffer> {
@@ -124,29 +122,33 @@ async function generateCertificatePDF(data: {
   doc.setDrawColor("#CCCCCC").setLineWidth(1);
   doc.rect(margin, margin, W - margin * 2, H - margin * 2);
 
-  // Header wash
+  // Header background
   doc.setFillColor(245, 245, 245);
   doc.rect(margin + 1, margin + 1, W - (margin + 1) * 2, 70, "F");
 
-  // Logo (wider, centered)
+  // Logo (reduced by 30%, centered)
   const logoData = await getImageAsBase64(
     "https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
   );
-  const logoW = 80,
-    logoH = 20;
+  const originalW = 80,
+    originalH = 20;
+  const logoW = originalW * 0.7,
+    logoH = originalH * 0.7;
   const logoX = (W - logoW) / 2,
     logoY = margin + 5;
-  if (logoData) doc.addImage(logoData, "PNG", logoX, logoY, logoW, logoH);
+  if (logoData) {
+    doc.addImage(logoData, "PNG", logoX, logoY, logoW, logoH);
+  }
 
-  // Title & subtitle (pushed down)
-  const titleY = logoY + logoH + 18; // extra gap
+  // Title ("QA Pass") & Subtitle
+  const titleY = logoY + logoH + 18;
   const subtitleY = titleY + 14;
 
   doc.setFont("helvetica", "bold").setFontSize(30).setTextColor(33);
-  doc.text("CERTIFICATE`", W / 2, titleY, { align: "center" });
+  doc.text("QA PASS", W / 2, titleY, { align: "center" });
 
   doc.setDrawColor("#666666").setLineWidth(0.5);
-  doc.line(W / 2 - 70, titleY + 4, W / 2 + 70, titleY + 4);
+  doc.line(W / 2 - 50, titleY + 4, W / 2 + 50, titleY + 4);
 
   doc.setFont("helvetica", "normal").setFontSize(14).setTextColor(80);
   doc.text("3D Modeling Worktest Completion", W / 2, subtitleY, {
@@ -166,41 +168,25 @@ async function generateCertificatePDF(data: {
   doc.setDrawColor(100).setLineWidth(0.7);
   doc.line(W / 2 - 60, y, W / 2 + 60, y);
 
-  y += 8;
-  //   doc.setFont("times", "normal").setFontSize(16).setTextColor(33);
-  //   doc.text(
-  //     `has successfully completed the ${data.worktestLevel} level`,
-  //     W / 2,
-  //     y,
-  //     { align: "center" }
-  //   );
-
-  //   y += 20;
-  //   doc.setFontSize(14).setTextColor(80);
-  //   doc.text("3D Modeling Worktest with Outstanding Results", W / 2, y, {
-  //     align: "center",
-  //   });
-
+  // Instruction block (30mm above footer)
+  const footerY = H - margin - 25;
+  const instructionY = footerY - 30;
   doc.setFont("helvetica", "italic").setFontSize(12).setTextColor(33);
-  const instructionLines = [
+  const lines = [
     `has successfully completed the initial ${data.worktestLevel} level worktest!`,
-    `Please download this certificate and email it along with your exported .glb model`,
+    `Please download this pass and email it along with your exported .glb model`,
     `to recruitment@charpstar.com for further review.`,
   ];
-
-  doc.text(instructionLines, W / 2, y, {
+  doc.text(lines, W / 2, instructionY, {
     align: "center",
     maxWidth: W - margin * 2,
     lineHeightFactor: 1.5,
   });
-  // Instruction block: place 30mm above footer
-  const footerY = H - margin - 25;
-  const instructionY = footerY - 20;
 
   // Footer
   doc.setFont("helvetica", "italic").setFontSize(10).setTextColor(100);
   doc.text(`Date: ${data.completionDate}`, margin + 10, footerY);
-  doc.text(`Certificate ID: ${data.certificateId}`, margin + 10, footerY + 6);
+  doc.text(`Pass ID: ${data.certificateId}`, margin + 10, footerY + 6);
 
   const sigX = W - margin - 60;
   doc.setDrawColor(33).setLineWidth(0.5);
