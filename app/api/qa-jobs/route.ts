@@ -485,7 +485,7 @@ Guidelines:
    • OVERALL: Weighted average considering all factors. Be conservative - only award high scores if model is extremely close to reference
    • SCORING SCALE: 98-100% = nearly perfect match, 90-97% = very close with only tiny differences, 75-89% = good match but clear differences visible, 50-74% = moderate similarity with significant differences, 25-49% = poor match with major differences, <25% = completely different
    ‼️ MANDATORY FORMAT ‼️: You MUST end your summary with this EXACT format: 'Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.' Replace X with actual numbers. This is REQUIRED.
-  ‼️ MANDATORY ‼️ • If ALL scores are >80%, mark status as 'Approved', otherwise mark as 'Not Approved'.
+   • If ALL scores are >90%, mark status as 'Approved', otherwise mark as 'Not Approved'.
 
 ‼️IMPORTANT‼️
 9. NEVER repeat the same issue across multiple views - report each unique problem only once.
@@ -803,12 +803,7 @@ export async function GET(request: NextRequest) {
     if (job.qa_results) {
       try {
         qaResults = JSON.parse(job.qa_results);
-
-        if (qaResults.summary && !qaResults.similarityScores) {
-          qaResults.similarityScores = extractSimilarityScores(
-            qaResults.summary
-          );
-        }
+        console.log(`📖 Retrieved QA results for job ${jobId} from database`);
       } catch (e) {
         console.error("Failed to parse QA results:", e);
       }
