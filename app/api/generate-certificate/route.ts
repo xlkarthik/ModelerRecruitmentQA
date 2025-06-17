@@ -4,15 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "../../../lib/supabase";
 import React from "react";
-import {
-  Document,
-  Page,
-  Text,
-  View,
-  StyleSheet,
-  pdf,
-  Font,
-} from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet, pdf, Font } from "@react-pdf/renderer";
 
 // Register fonts (optional - you can skip this to use default fonts)
 // Font.register({
@@ -22,70 +14,70 @@ import {
 
 const styles = StyleSheet.create({
   page: {
-    backgroundColor: "white",
+    backgroundColor: 'white',
     padding: 60,
-    fontFamily: "Helvetica",
+    fontFamily: 'Helvetica',
   },
   header: {
-    backgroundColor: "#667eea",
+    backgroundColor: '#667eea',
     padding: 40,
     marginBottom: 40,
     borderRadius: 8,
   },
   title: {
     fontSize: 36,
-    color: "white",
-    textAlign: "center",
-    fontWeight: "bold",
+    color: 'white',
+    textAlign: 'center',
+    fontWeight: 'bold',
     marginBottom: 10,
   },
   subtitle: {
     fontSize: 18,
-    color: "white",
-    textAlign: "center",
+    color: 'white',
+    textAlign: 'center',
   },
   certifyText: {
     fontSize: 16,
-    textAlign: "center",
+    textAlign: 'center',
     marginBottom: 20,
-    color: "#2d3748",
+    color: '#2d3748',
   },
   candidateName: {
     fontSize: 42,
-    fontWeight: "bold",
-    textAlign: "center",
+    fontWeight: 'bold',
+    textAlign: 'center',
     marginBottom: 30,
-    color: "#2d3748",
+    color: '#2d3748',
   },
   achievementText: {
     fontSize: 20,
-    textAlign: "center",
+    textAlign: 'center',
     marginBottom: 10,
-    color: "#2d3748",
+    color: '#2d3748',
   },
   scoresContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
+    flexDirection: 'row',
+    justifyContent: 'space-around',
     marginVertical: 40,
   },
   scoreItem: {
-    alignItems: "center",
+    alignItems: 'center',
   },
   scoreValue: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#38a169",
+    fontWeight: 'bold',
+    color: '#38a169',
     marginBottom: 5,
   },
   scoreLabel: {
     fontSize: 12,
-    color: "#718096",
-    textTransform: "uppercase",
+    color: '#718096',
+    textTransform: 'uppercase',
   },
   footer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
     marginTop: 60,
   },
   footerLeft: {
@@ -93,32 +85,32 @@ const styles = StyleSheet.create({
   },
   footerRight: {
     flex: 1,
-    alignItems: "center",
+    alignItems: 'center',
   },
   dateText: {
     fontSize: 14,
-    color: "#718096",
+    color: '#718096',
     marginBottom: 5,
   },
   certificateId: {
     fontSize: 10,
-    color: "#718096",
+    color: '#718096',
   },
   signatureLine: {
     borderBottomWidth: 1,
-    borderBottomColor: "#718096",
+    borderBottomColor: '#718096',
     width: 150,
     marginBottom: 10,
   },
   signatureText: {
     fontSize: 12,
-    textAlign: "center",
-    color: "#718096",
+    textAlign: 'center',
+    color: '#718096',
   },
   companyLogo: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#667eea",
+    fontWeight: 'bold',
+    color: '#667eea',
   },
 });
 
@@ -131,9 +123,9 @@ const CertificateDocument = ({ data }: { data: any }) => (
       </View>
 
       <Text style={styles.certifyText}>This is to certify that</Text>
-
+      
       <Text style={styles.candidateName}>{data.candidateName}</Text>
-
+      
       <Text style={styles.achievementText}>
         has successfully completed the {data.worktestLevel} LEVEL
       </Text>
@@ -143,24 +135,14 @@ const CertificateDocument = ({ data }: { data: any }) => (
 
       <View style={styles.scoresContainer}>
         {[
-          {
-            label: "Silhouette",
-            value: data.similarityScores.silhouette || "N/A",
-          },
-          {
-            label: "Proportion",
-            value: data.similarityScores.proportion || "N/A",
-          },
-          {
-            label: "Color/Material",
-            value: data.similarityScores.colorMaterial || "N/A",
-          },
+          { label: "Silhouette", value: data.similarityScores.silhouette || "N/A" },
+          { label: "Proportion", value: data.similarityScores.proportion || "N/A" },
+          { label: "Color/Material", value: data.similarityScores.colorMaterial || "N/A" },
           { label: "Overall", value: data.similarityScores.overall || "N/A" },
         ].map((score, index) => (
           <View key={index} style={styles.scoreItem}>
             <Text style={styles.scoreValue}>
-              {score.value}
-              {typeof score.value === "number" ? "%" : ""}
+              {score.value}{typeof score.value === "number" ? "%" : ""}
             </Text>
             <Text style={styles.scoreLabel}>{score.label}</Text>
           </View>
@@ -171,9 +153,7 @@ const CertificateDocument = ({ data }: { data: any }) => (
         <View style={styles.footerLeft}>
           <Text style={styles.companyLogo}>CharpstAR</Text>
           <Text style={styles.dateText}>Date: {data.completionDate}</Text>
-          <Text style={styles.certificateId}>
-            Certificate ID: {data.certificateId}
-          </Text>
+          <Text style={styles.certificateId}>Certificate ID: {data.certificateId}</Text>
         </View>
         <View style={styles.footerRight}>
           <View style={styles.signatureLine} />
@@ -244,9 +224,7 @@ export async function POST(request: NextRequest) {
       similarityScores: qaResults.similarityScores || {},
     };
 
-    const pdfBuffer = await pdf(
-      <CertificateDocument data={certificateData} />
-    ).toBuffer();
+    const pdfBuffer = await pdf(<CertificateDocument data={certificateData} />).toBuffer();
 
     // Return PDF as download
     return new NextResponse(pdfBuffer, {
