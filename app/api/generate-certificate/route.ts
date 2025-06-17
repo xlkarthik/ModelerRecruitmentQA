@@ -203,7 +203,7 @@ async function generateCertificatePDF(data: {
   // Instruction block
   y += 40;
   doc.setFont("helvetica", "italic");
-  doc.setFontSize(12);
+  doc.setFontSize(10);
   doc.setTextColor(33, 37, 41);
   doc.text(
     "Congratulations on passing the initial worktest! Please download this certificate and email it along with your exported .glb model to recruitment@charpstar.com for review.",
