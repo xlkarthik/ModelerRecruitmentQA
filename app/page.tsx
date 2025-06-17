@@ -116,12 +116,14 @@ export default function WorktestQA() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [qaComplete, setQaComplete] = useState(false);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loadingQA, setLoadingQA] = useState(false);
   const [fact, setFact] = useState<string>("");
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null);
   const [viewerReady, setViewerReady] = useState(false);
+  const [candidateName, setCandidateName] = useState<string>("");
+  const [showCertificateModal, setShowCertificateModal] = useState(false);
+  const [certificateData, setCertificateData] = useState<any>(null);
   const [modelStats, setModelStats] = useState<{
     meshCount: number;
     materialCount: number;
@@ -231,8 +233,7 @@ export default function WorktestQA() {
         console.log("Job status:", data);
 
         if (data.status === "complete") {
-          console.log("Job complete! PDF URL:", data.pdfUrl);
-          setPdfUrl(`/api/download-pdf?jobId=${currentJobId}`);
+          console.log("Job complete! QA Results:", data.qaResults);
 
           // Parse QA results if available
           if (data.qaResults) {
@@ -340,15 +341,298 @@ export default function WorktestQA() {
     e.stopPropagation();
   };
 
-  const downloadPdf = () => {
-    if (currentJobId) {
-      console.log("Downloading PDF for job:", currentJobId);
-      const proxyUrl = `/api/download-pdf?jobId=${currentJobId}`;
-      window.location.href = proxyUrl;
-    } else {
-      console.error("No job ID available for download");
-      setError("No job ID available for download");
+  const generateCertificate = async () => {
+    if (!candidateName.trim()) {
+      setError("Please enter your name to generate the certificate");
+      return;
     }
+
+    if (!currentJobId || !qaResults) {
+      setError("No QA results available for certificate generation");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/generate-certificate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId: currentJobId,
+          candidateName: candidateName.trim(),
+          worktestLevel: selectedDifficulty,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to generate certificate");
+      }
+
+      const data = await response.json();
+      setCertificateData(data.certificateData);
+      setShowCertificateModal(true);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const downloadCertificate = () => {
+    if (!certificateData) return;
+
+    // Create certificate HTML content
+    const certificateHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>CharpstAR Worktest Certificate</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+          
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          
+          body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+          }
+          
+          .certificate {
+            background: white;
+            width: 800px;
+            height: 600px;
+            padding: 60px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+          }
+          
+          .certificate::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+          }
+          
+          .header {
+            text-align: center;
+            margin-bottom: 40px;
+          }
+          
+          .logo {
+            height: 50px;
+            margin-bottom: 20px;
+          }
+          
+          .title {
+            font-size: 36px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+          }
+          
+          .subtitle {
+            font-size: 18px;
+            color: #667eea;
+            font-weight: 300;
+          }
+          
+          .content {
+            text-align: center;
+            margin: 40px 0;
+          }
+          
+          .awarded-to {
+            font-size: 16px;
+            color: #718096;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
+          
+          .candidate-name {
+            font-size: 42px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #667eea;
+            display: inline-block;
+            padding-bottom: 10px;
+          }
+          
+          .achievement {
+            font-size: 20px;
+            color: #4a5568;
+            line-height: 1.6;
+            margin-bottom: 30px;
+          }
+          
+          .worktest-level {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
+          
+          .scores {
+            display: flex;
+            justify-content: space-around;
+            margin: 30px 0;
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 10px;
+          }
+          
+          .score-item {
+            text-align: center;
+          }
+          
+          .score-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #38a169;
+            margin-bottom: 5px;
+          }
+          
+          .score-label {
+            font-size: 12px;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
+          
+          .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+          }
+          
+          .date {
+            font-size: 14px;
+            color: #718096;
+          }
+          
+          .certificate-id {
+            font-size: 12px;
+            color: #a0aec0;
+            font-family: monospace;
+          }
+          
+          .signature {
+            text-align: right;
+          }
+          
+          .signature-line {
+            border-bottom: 2px solid #2d3748;
+            width: 200px;
+            margin-bottom: 8px;
+          }
+          
+          .signature-text {
+            font-size: 14px;
+            color: #718096;
+          }
+          
+          @media print {
+            body { background: white; }
+            .certificate { box-shadow: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="certificate">
+          <div class="header">
+            <img src="${
+              certificateData.companyLogo
+            }" alt="CharpstAR Logo" class="logo" />
+            <div class="title">CERTIFICATE OF ACHIEVEMENT</div>
+            <div class="subtitle">3D Modeling Worktest Completion</div>
+          </div>
+          
+          <div class="content">
+            <div class="awarded-to">This is to certify that</div>
+            <div class="candidate-name">${certificateData.candidateName}</div>
+            
+            <div class="achievement">
+              has successfully completed the <span class="worktest-level">${
+                certificateData.worktestLevel
+              } Level</span><br/>
+              3D Modeling Worktest with outstanding results
+            </div>
+            
+            <div class="scores">
+              <div class="score-item">
+                <div class="score-value">${
+                  certificateData.similarityScores.silhouette || "N/A"
+                }%</div>
+                <div class="score-label">Silhouette</div>
+              </div>
+              <div class="score-item">
+                <div class="score-value">${
+                  certificateData.similarityScores.proportion || "N/A"
+                }%</div>
+                <div class="score-label">Proportion</div>
+              </div>
+              <div class="score-item">
+                <div class="score-value">${
+                  certificateData.similarityScores.colorMaterial || "N/A"
+                }%</div>
+                <div class="score-label">Color/Material</div>
+              </div>
+              <div class="score-item">
+                <div class="score-value">${
+                  certificateData.similarityScores.overall || "N/A"
+                }%</div>
+                <div class="score-label">Overall</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="footer">
+            <div>
+              <div class="date">Date: ${certificateData.completionDate}</div>
+              <div class="certificate-id">Certificate ID: ${
+                certificateData.certificateId
+              }</div>
+            </div>
+            <div class="signature">
+              <div class="signature-line"></div>
+              <div class="signature-text">CharpstAR Team</div>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Create and download the certificate
+    const blob = new Blob([certificateHTML], { type: "text/html" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `CharpstAR_Certificate_${certificateData.candidateName.replace(
+      /\s+/g,
+      "_"
+    )}_${certificateData.worktestLevel}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   };
 
   const resetAll = () => {
@@ -361,15 +645,13 @@ export default function WorktestQA() {
     setLoadingQA(false);
     setModelStats(null);
     setCurrentJobId(null);
+    setCandidateName("");
+    setShowCertificateModal(false);
+    setCertificateData(null);
 
     if (pollInterval) {
       clearInterval(pollInterval);
       setPollInterval(null);
-    }
-
-    if (pdfUrl) {
-      URL.revokeObjectURL(pdfUrl);
-      setPdfUrl(null);
     }
 
     if (loadTimeoutRef.current) {
@@ -831,8 +1113,7 @@ export default function WorktestQA() {
                 images
               </li>
               <li>
-                Receive a detailed QA report with technical analysis and visual
-                feedback
+                Receive detailed QA feedback and a certificate if approved
               </li>
             </ol>
           </div>
@@ -931,6 +1212,94 @@ export default function WorktestQA() {
               </div>
             </div>
 
+            {/* Approval Message or Issues */}
+            {qaResults?.status === "Approved" ? (
+              <div className="p-6 bg-green-50 border-l-4 border-green-500">
+                <div className="flex items-center">
+                  <svg
+                    className="w-6 h-6 text-green-500 mr-3"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <div>
+                    <h3 className="text-lg font-semibold text-green-800">
+                      Congratulations! Your model has been approved.
+                    </h3>
+                    <p className="text-green-700 mt-1">
+                      Your 3D model meets all the required standards for the{" "}
+                      {selectedDifficulty} worktest. You can now generate your
+                      certificate of completion.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Issues Section for Non-Approved Models */
+              <div className="p-6 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 text-red-600">
+                  Issues Found - Model Needs Improvement
+                </h3>
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+                  <p className="text-red-700">
+                    Your model did not meet the approval criteria. Please review
+                    the detailed feedback below and make the necessary
+                    adjustments before resubmitting.
+                  </p>
+                </div>
+
+                {qaResults?.differences && qaResults.differences.length > 0 && (
+                  <div className="space-y-4">
+                    {qaResults.differences.map((diff, index) => (
+                      <div
+                        key={index}
+                        className={`p-4 rounded-lg border-l-4 ${
+                          diff.severity === "high"
+                            ? "border-red-500 bg-red-50"
+                            : diff.severity === "medium"
+                            ? "border-yellow-500 bg-yellow-50"
+                            : "border-blue-500 bg-blue-50"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-600">
+                            Render {diff.renderIndex + 1} vs Reference{" "}
+                            {diff.referenceIndex + 1}
+                          </span>
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-medium ${
+                              diff.severity === "high"
+                                ? "bg-red-100 text-red-800"
+                                : diff.severity === "medium"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-blue-100 text-blue-800"
+                            }`}
+                          >
+                            {diff.severity} severity
+                          </span>
+                        </div>
+                        <ul className="space-y-1">
+                          {diff.issues.map((issue, issueIndex) => (
+                            <li
+                              key={issueIndex}
+                              className="text-sm text-gray-700"
+                            >
+                              • {issue}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Similarity Scores */}
             {qaResults?.similarityScores && (
               <div className="p-6 border-b border-gray-200">
@@ -970,57 +1339,6 @@ export default function WorktestQA() {
                       );
                     }
                   )}
-                </div>
-              </div>
-            )}
-
-            {/* Visual Issues */}
-            {qaResults?.differences && qaResults.differences.length > 0 && (
-              <div className="p-6 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Identified Issues
-                </h3>
-                <div className="space-y-4">
-                  {qaResults.differences.map((diff, index) => (
-                    <div
-                      key={index}
-                      className={`p-4 rounded-lg border-l-4 ${
-                        diff.severity === "high"
-                          ? "border-red-500 bg-red-50"
-                          : diff.severity === "medium"
-                          ? "border-yellow-500 bg-yellow-50"
-                          : "border-blue-500 bg-blue-50"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-600">
-                          Render {diff.renderIndex + 1} vs Reference{" "}
-                          {diff.referenceIndex + 1}
-                        </span>
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-medium ${
-                            diff.severity === "high"
-                              ? "bg-red-100 text-red-800"
-                              : diff.severity === "medium"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-blue-100 text-blue-800"
-                          }`}
-                        >
-                          {diff.severity} severity
-                        </span>
-                      </div>
-                      <ul className="space-y-1">
-                        {diff.issues.map((issue, issueIndex) => (
-                          <li
-                            key={issueIndex}
-                            className="text-sm text-gray-700"
-                          >
-                            • {issue}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
                 </div>
               </div>
             )}
@@ -1204,30 +1522,128 @@ export default function WorktestQA() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <button
-              onClick={downloadPdf}
-              className="flex-1 bg-blue-600 text-white rounded-lg py-4 font-medium hover:bg-blue-700 transition-colors"
-            >
-              Download Detailed PDF Report
-            </button>
+          <div className="flex flex-col gap-4 mb-6">
+            {qaResults?.status === "Approved" ? (
+              /* Certificate Generation for Approved Models */
+              <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+                <h3 className="text-lg font-semibold text-green-800 mb-4">
+                  🎉 Generate Your Certificate
+                </h3>
+                <p className="text-green-700 mb-4">
+                  Your model has been approved! Enter your name below to
+                  generate your certificate of completion.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <input
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={candidateName}
+                    onChange={(e) => setCandidateName(e.target.value)}
+                    className="flex-1 px-4 py-3 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                  <button
+                    onClick={generateCertificate}
+                    disabled={!candidateName.trim()}
+                    className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Generate Certificate
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Improvement Message for Non-Approved Models */
+              <div className="bg-red-50 p-6 rounded-lg border border-red-200">
+                <h3 className="text-lg font-semibold text-red-800 mb-2">
+                  Model Requires Improvements
+                </h3>
+                <p className="text-red-700">
+                  Please review the issues listed above and make the necessary
+                  adjustments to your 3D model. Once you've addressed these
+                  concerns, you can upload your improved model for
+                  re-evaluation.
+                </p>
+              </div>
+            )}
 
             <button
               onClick={resetAll}
-              className="flex-1 border border-gray-300 text-gray-800 rounded-lg py-4 font-medium hover:bg-gray-50 transition-colors"
+              className="w-full border border-gray-300 text-gray-800 rounded-lg py-4 font-medium hover:bg-gray-50 transition-colors"
             >
               Test Another Model
             </button>
           </div>
 
+          {/* Certificate Modal */}
+          {showCertificateModal && certificateData && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-lg p-6 max-w-md w-full">
+                <div className="text-center">
+                  <div className="mb-4">
+                    <svg
+                      className="w-16 h-16 text-green-500 mx-auto"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    Certificate Ready!
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    Your certificate has been generated successfully. Click the
+                    button below to download it.
+                  </p>
+                  <div className="flex flex-col gap-3">
+                    <button
+                      onClick={downloadCertificate}
+                      className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
+                    >
+                      Download Certificate
+                    </button>
+                    <button
+                      onClick={() => setShowCertificateModal(false)}
+                      className="text-gray-500 hover:text-gray-700 transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Additional Info */}
-          <div className="mt-6 bg-blue-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-blue-900 mb-2">Next Steps</h3>
-            <p className="text-sm text-blue-800">
-              Your model has been analyzed against the {selectedDifficulty}{" "}
-              worktest requirements. Download the PDF report for detailed
-              feedback and recommendations. If you need to make adjustments, you
-              can test your updated model anytime.
+          <div
+            className={`mt-6 p-4 rounded-lg ${
+              qaResults?.status === "Approved" ? "bg-green-50" : "bg-blue-50"
+            }`}
+          >
+            <h3
+              className={`font-semibold mb-2 ${
+                qaResults?.status === "Approved"
+                  ? "text-green-900"
+                  : "text-blue-900"
+              }`}
+            >
+              {qaResults?.status === "Approved"
+                ? "Congratulations!"
+                : "Next Steps"}
+            </h3>
+            <p
+              className={`text-sm ${
+                qaResults?.status === "Approved"
+                  ? "text-green-800"
+                  : "text-blue-800"
+              }`}
+            >
+              {qaResults?.status === "Approved"
+                ? `Excellent work! Your ${selectedDifficulty} level worktest model meets all requirements. Download your certificate to showcase your 3D modeling skills.`
+                : `Your model has been analyzed against the ${selectedDifficulty} worktest requirements. Review the feedback above to understand what needs improvement. You can test your updated model anytime.`}
             </p>
           </div>
         </div>
