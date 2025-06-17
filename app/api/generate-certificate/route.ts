@@ -133,7 +133,7 @@ async function generateCertificatePDF(data: {
     "https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
   );
   const logoW = 70,
-    logoH = 24;
+    logoH = 20;
   const logoX = (W - logoW) / 2,
     logoY = margin + 5;
   if (logoData) doc.addImage(logoData, "PNG", logoX, logoY, logoW, logoH);
