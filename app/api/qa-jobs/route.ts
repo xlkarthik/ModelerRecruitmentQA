@@ -561,14 +561,12 @@ Output *only* a single valid JSON object, for example:
     // Extract similarity scores from summary
     qaResults.similarityScores = extractSimilarityScores(qaResults.summary);
 
-    // Store QA results in database - FIXED COLUMN NAMES
+    // Store QA results in database - SIMPLE VERSION
     const { data: updateData, error: updateError } = await supabase
       .from("qa_jobs")
       .update({
         status: "complete",
         end_time: new Date().toISOString(),
-        // Don't try to store qa_results if column doesn't exist
-        // The frontend will get results from the API response anyway
       })
       .eq("id", jobId)
       .select();
@@ -581,18 +579,8 @@ Output *only* a single valid JSON object, for example:
       throw new Error(`Database update failed: ${updateError.message}`);
     }
 
-    if (!updateData || updateData.length === 0) {
-      console.error(`❌ No rows updated for job ${jobId} - job may not exist`);
-      throw new Error(`Job ${jobId} not found in database`);
-    }
-
     console.log(`✅ Successfully updated job ${jobId} status to complete`);
     console.log(`Job ${jobId} completed successfully`);
-
-    // Store results in memory for now since we can't save to DB
-    // You can add the qa_results column to your table later if needed
-    global.qaResultsCache = global.qaResultsCache || {};
-    global.qaResultsCache[jobId] = qaResults;
 
     return { jobId, status: "complete", qaResults };
   } catch (error: any) {
@@ -794,11 +782,6 @@ export async function GET(request: NextRequest) {
       } catch (e) {
         console.error("Failed to parse QA results:", e);
       }
-    }
-
-    // Check memory cache for results if not in database
-    if (!qaResults && global.qaResultsCache && global.qaResultsCache[jobId]) {
-      qaResults = global.qaResultsCache[jobId];
     }
 
     let queueInfo = null;
