@@ -1225,6 +1225,19 @@ export default function WorktestQA() {
               </div>
             </div>
 
+            {/* DEBUG INFO */}
+            <div className="p-4 bg-yellow-100 border border-yellow-300 mb-4">
+              <h4 className="font-bold text-yellow-800">DEBUG INFO:</h4>
+              <p>Status: "{qaResults?.status}"</p>
+              <p>Status type: {typeof qaResults?.status}</p>
+              <p>
+                Is Approved?: {qaResults?.status === "Approved" ? "YES" : "NO"}
+              </p>
+              <p>
+                Similarity Scores: {JSON.stringify(qaResults?.similarityScores)}
+              </p>
+            </div>
+
             {/* Approval Message or Issues */}
             {qaResults?.status === "Approved" ? (
               <div className="p-6 bg-green-50 border-l-4 border-green-500">
