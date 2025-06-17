@@ -177,7 +177,7 @@ async function generatePassPDF(data: {
   doc.setFontSize(16).setTextColor(100);
   doc.text("This verifies that", W / 2, y, { align: "center" });
 
-  y += 10;
+  y += 20;
   doc.setFont("times", "bolditalic").setFontSize(36).setTextColor(21);
   doc.text(data.candidateName, W / 2, y, { align: "center" });
 
