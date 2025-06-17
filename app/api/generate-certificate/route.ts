@@ -9,7 +9,9 @@ export async function POST(request: NextRequest) {
 
     if (!jobId || !candidateName || !worktestLevel) {
       return NextResponse.json(
-        { error: "Missing required fields: jobId, candidateName, worktestLevel" },
+        {
+          error: "Missing required fields: jobId, candidateName, worktestLevel",
+        },
         { status: 400 }
       );
     }
@@ -68,8 +70,10 @@ export async function POST(request: NextRequest) {
     return new NextResponse(pdfBuffer, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="CharpstAR_Certificate_${candidateName
-          .replace(/\s+/g, "_")}_${worktestLevel.toUpperCase()}.pdf"`,
+        "Content-Disposition": `attachment; filename="CharpstAR_Certificate_${candidateName.replace(
+          /\s+/g,
+          "_"
+        )}_${worktestLevel.toUpperCase()}.pdf"`,
         "Content-Length": pdfBuffer.length.toString(),
       },
     });
@@ -184,12 +188,9 @@ async function generateCertificatePDF(data: {
   y += 10;
   doc.setFontSize(14);
   doc.setTextColor(80, 85, 100);
-  doc.text(
-    "3D Modeling Worktest with Outstanding Results",
-    W / 2,
-    y,
-    { align: "center" }
-  );
+  doc.text("3D Modeling Worktest with Outstanding Results", W / 2, y, {
+    align: "center",
+  });
 
   // ── Footer ───────────────────────────────────────────────────
   const footerY = H - margin - 25;
