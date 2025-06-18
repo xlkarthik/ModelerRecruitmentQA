@@ -514,7 +514,7 @@ Output *only* a single valid JSON object, for example:
     }
   ],
   "summary": "The model shows good structural accuracy but has color variations in the cushioning and wood finish. The rattan details could be more refined. Similarity scores: Silhouette 92%, Proportion 88%, Color/Material 73%, Overall 84%.",
-  "status": "• If ALL scores are >80%, mark status as 'Approved', otherwise mark as 'Not Approved'.Not Approved"
+  "status": "• If ALL scores are >80%, mark status as 'Approved', otherwise mark as 'Not Approved'."
 }`,
     };
 
