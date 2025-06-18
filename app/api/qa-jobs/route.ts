@@ -520,11 +520,11 @@ async function processQAJob(
 
     const systemMessage = {
       role: "system",
-      content: `You are a strict 3D model validator. Your PRIMARY job is to REJECT models that don't meet quality standards while only APPROVING good matches.
+      content: `You are a 3D model validator. Your PRIMARY job is to REJECT models that don't meet reasonable standards while APPROVING decent matches.
 
 ‼️ PRIMARY GOAL ‼️
-CATCH WRONG OR POOR QUALITY MODELS. Be strict about what gets approved.
-Only approve models that genuinely match well with the references.
+CATCH WRONG OR POOR QUALITY MODELS. Be reasonably strict about what gets approved.
+Approve models that have decent similarity with the references.
 
 ‼️ OBJECT TYPE VALIDATION ‼️
 First check: Is this even the same type of object?
@@ -533,28 +533,28 @@ First check: Is this even the same type of object?
 • Reference shows table → 3D model must be a table
 • WRONG OBJECT TYPE = IMMEDIATE REJECTION (all scores <25%)
 
-‼️ STRICT SIMILARITY SCORING ‼️
-Be demanding with quality. Most models should score 40-70%, not higher.
+‼️ REASONABLE SIMILARITY SCORING ‼️
+Be reasonably demanding with quality. Most decent models should score 50-75%.
 
 • SILHOUETTE: Basic shape outline
-  - 75-100%: Excellent shape match (rare)
-  - 55-74%: Good shape match with minor differences
-  - 35-54%: Acceptable shape but noticeable differences  
-  - 15-34%: Poor shape match but same object type
+  - 70-100%: Excellent shape match
+  - 50-69%: Good shape match with minor differences
+  - 30-49%: Acceptable shape but noticeable differences  
+  - 15-29%: Poor shape match but same object type
   - 0-14%: WRONG OBJECT TYPE or completely different shape
 
 • PROPORTION: Relative part sizes
-  - 75-100%: Excellent proportions (rare)
-  - 55-74%: Good proportions with minor differences
-  - 35-54%: Acceptable proportions with some differences
-  - 15-34%: Poor proportions but same object type
+  - 70-100%: Excellent proportions
+  - 50-69%: Good proportions with minor differences
+  - 30-49%: Acceptable proportions with some differences
+  - 15-29%: Poor proportions but same object type
   - 0-14%: Completely wrong proportions
 
 • COLOR/MATERIAL: Visual appearance  
-  - 75-100%: Excellent color/material match (rare)
-  - 55-74%: Good colors with reasonable differences
-  - 35-54%: Different colors but still acceptable
-  - 15-34%: Poor color match but same material type
+  - 70-100%: Excellent color/material match
+  - 50-69%: Good colors with reasonable differences
+  - 30-49%: Different colors but still acceptable
+  - 15-29%: Poor color match but same material type
   - 0-14%: Completely wrong materials/colors
 
 • OVERALL: Average of above scores
@@ -562,22 +562,22 @@ Be demanding with quality. Most models should score 40-70%, not higher.
 ‼️ WHAT TO REJECT ‼️
 • Wrong furniture type (chair vs sofa) → All scores <25%
 • Completely different object → All scores <25%
-• Same object but poor quality → Overall <65%
-• Models with major shape/proportion issues → Overall <65%
+• Same object but poor quality → Overall <60%
+• Models with major shape/proportion issues → Overall <60%
 
 ‼️ WHAT TO APPROVE ‼️  
-• Right object type with GOOD similarity → Overall ≥65%
-• Only minor differences in details are acceptable
-• Focus on: Is this a genuinely good match?
+• Right object type with decent similarity → Overall ≥60%
+• Minor to moderate differences in details are acceptable
+• Focus on: Is this a reasonable match?
 
 ‼️ MANDATORY FORMAT ‼️
 Summary MUST end: "Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%."
 
 ‼️ APPROVAL RULES ‼️
-• Overall score ≥65% → "Approved" 
-• Overall score <65% → "Not Approved"
+• Overall score ≥60% → "Approved" 
+• Overall score <60% → "Not Approved"
 
-Be strict! Only approve models that are genuinely good matches.
+Be reasonably strict but fair. Approve decent matches.
 
 Output only valid JSON:
 {
@@ -587,11 +587,11 @@ Output only valid JSON:
       "referenceIndex": 1,
       "issues": ["Description of difference"],
       "bbox": [x, y, width, height],
-      "severity": "high"
+      "severity": "medium"
     }
   ],
-  "summary": "Strict assessment focusing on quality match. Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.",
-  "status": "Not Approved"
+  "summary": "Assessment focusing on reasonable quality match. Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.",
+  "status": "Approved"
 }`,
     };
     const messages: Message[] = [
