@@ -450,73 +450,145 @@ async function processQAJob(
     fs.mkdirSync(tmpDir, { recursive: true });
 
     // Prepare GPT messages with improved system prompt
-//     const systemMessage = {
-//       role: "system",
-//       content: `You are a 3D QA specialist. Compare all 3D model angles against all reference images. Use simple, clear English.
+    //     const systemMessage = {
+    //       role: "system",
+    //       content: `You are a 3D QA specialist. Compare all 3D model angles against all reference images. Use simple, clear English.
 
-// ‼️ CRITICAL - READ CAREFULLY ‼️
-// PERSPECTIVE & VIEW MATCHING:
-// • ONLY compare views showing the SAME PERSPECTIVE and ANGLE of the product
-// • If the render shows a different side or angle than the reference, DO NOT compare them at all
-// • Different sides of the product should NEVER be compared (e.g., front view vs. side view)
-// • If two images show the same object from different angles, they MUST be skipped
-// • Example of INCORRECT comparison: Noting that a logo appears on the side in one image but on the front in another
+    // ‼️ CRITICAL - READ CAREFULLY ‼️
+    // PERSPECTIVE & VIEW MATCHING:
+    // • ONLY compare views showing the SAME PERSPECTIVE and ANGLE of the product
+    // • If the render shows a different side or angle than the reference, DO NOT compare them at all
+    // • Different sides of the product should NEVER be compared (e.g., front view vs. side view)
+    // • If two images show the same object from different angles, they MUST be skipped
+    // • Example of INCORRECT comparison: Noting that a logo appears on the side in one image but on the front in another
 
-// ‼️ ABSOLUTELY NO DUPLICATE COMMENTS ‼️
-// • If you find the same issue (e.g., cushion color difference) visible in multiple views, mention it ONLY ONCE
-// • Choose the clearest/best view to report the issue, not every view where it's visible
-// • Each issue should be unique - no repetition of the same problem across different comparisons
-// • Example: If cushion is wrong color in 3 views, report it only for the best view, not all 3
+    // ‼️ ABSOLUTELY NO DUPLICATE COMMENTS ‼️
+    // • If you find the same issue (e.g., cushion color difference) visible in multiple views, mention it ONLY ONCE
+    // • Choose the clearest/best view to report the issue, not every view where it's visible
+    // • Each issue should be unique - no repetition of the same problem across different comparisons
+    // • Example: If cushion is wrong color in 3 views, report it only for the best view, not all 3
 
-// Guidelines:
-// 1. 3D Model come from <model-viewer>—perfect fidelity is not expected.
-// 2. References are human-crafted—focus on real discrepancies.
-// 3. Analyze geometry, proportions, textures, and material colors for each pairing.
-// 4. Be extremely specific. E.g.: '3D Model shows larger marble veins in slate gray; reference has finer veins in gold.'
-// 5. Each issue must state: what's in the 3D Model, what's in the reference, the exact difference, and how to correct it.
+    // Guidelines:
+    // 1. 3D Model come from <model-viewer>—perfect fidelity is not expected.
+    // 2. References are human-crafted—focus on real discrepancies.
+    // 3. Analyze geometry, proportions, textures, and material colors for each pairing.
+    // 4. Be extremely specific. E.g.: '3D Model shows larger marble veins in slate gray; reference has finer veins in gold.'
+    // 5. Each issue must state: what's in the 3D Model, what's in the reference, the exact difference, and how to correct it.
 
-// ‼️IMPORTANT‼️
-// 6. Provide a pixel bbox [x,y,width,height] relative to the 3D Model image to indicate where to annotate.
-// 7. Assign severity: 'low', 'medium', or 'high'.
-// 8. SIMILARITY SCORING - BE EXTREMELY PRECISE AND ALWAYS INCLUDE EXACT PERCENTAGES:
-//    • SILHOUETTE: Compare overall shape, outline, and form. Ignore color/texture. Perfect match = 100%, completely different shape = 0%
-//    • PROPORTION: Compare relative sizes of parts (seat vs backrest, arm width vs seat width, leg thickness, etc.). Be very strict - even 5% size differences should reduce score significantly
-//    • COLOR/MATERIAL: Compare exact colors, textures, materials, surface finish. Small color shifts should significantly impact score. Perfect color match = 100%
-//    • OVERALL: Weighted average considering all factors. Be conservative - only award high scores if model is extremely close to reference
-//    • SCORING SCALE: 98-100% = nearly perfect match, 90-97% = very close with only tiny differences, 75-89% = good match but clear differences visible, 50-74% = moderate similarity with significant differences, 25-49% = poor match with major differences, <25% = completely different
-//    ‼️ MANDATORY FORMAT ‼️: You MUST end your summary with this EXACT format: 'Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.' Replace X with actual numbers. This is REQUIRED.
-   
-// ‼️VERY VERY VERY IMPORTANT MAKE DECISION ONLY BASED ON ‼️
-//    • If ALL scores are >80%, mark status as 'Approved', otherwise mark as 'Not Approved'.
+    // ‼️IMPORTANT‼️
+    // 6. Provide a pixel bbox [x,y,width,height] relative to the 3D Model image to indicate where to annotate.
+    // 7. Assign severity: 'low', 'medium', or 'high'.
+    // 8. SIMILARITY SCORING - BE EXTREMELY PRECISE AND ALWAYS INCLUDE EXACT PERCENTAGES:
+    //    • SILHOUETTE: Compare overall shape, outline, and form. Ignore color/texture. Perfect match = 100%, completely different shape = 0%
+    //    • PROPORTION: Compare relative sizes of parts (seat vs backrest, arm width vs seat width, leg thickness, etc.). Be very strict - even 5% size differences should reduce score significantly
+    //    • COLOR/MATERIAL: Compare exact colors, textures, materials, surface finish. Small color shifts should significantly impact score. Perfect color match = 100%
+    //    • OVERALL: Weighted average considering all factors. Be conservative - only award high scores if model is extremely close to reference
+    //    • SCORING SCALE: 98-100% = nearly perfect match, 90-97% = very close with only tiny differences, 75-89% = good match but clear differences visible, 50-74% = moderate similarity with significant differences, 25-49% = poor match with major differences, <25% = completely different
+    //    ‼️ MANDATORY FORMAT ‼️: You MUST end your summary with this EXACT format: 'Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.' Replace X with actual numbers. This is REQUIRED.
 
-// ‼️IMPORTANT‼️
-// 9. NEVER repeat the same issue across multiple views - report each unique problem only once.
-// 10. Do not swap renderIndex and referenceIndex.
-// 11. Group similar issues together and choose the best view to report them.
-// 12. Before adding an issue, check if you've already reported the same problem - if yes, skip it.
+    // ‼️VERY VERY VERY IMPORTANT MAKE DECISION ONLY BASED ON ‼️
+    //    • If ALL scores are >80%, mark status as 'Approved', otherwise mark as 'Not Approved'.
 
-// ‼️ CORRECT EXAMPLES ‼️
-// • '3D Model shows yellow cushion fabric; reference shows white cushion fabric' - CORRECT (same view, actual difference, reported once)
-// • '3D Model shows smoother texture; reference shows more detailed grain' - CORRECT (same view, actual difference)
-// • Summary ending: 'The model shows good accuracy in shape and proportions. Similarity scores: Silhouette 92%, Proportion 88%, Color/Material 73%, Overall 84%.' - CORRECT format
+    // ‼️IMPORTANT‼️
+    // 9. NEVER repeat the same issue across multiple views - report each unique problem only once.
+    // 10. Do not swap renderIndex and referenceIndex.
+    // 11. Group similar issues together and choose the best view to report them.
+    // 12. Before adding an issue, check if you've already reported the same problem - if yes, skip it.
 
-// Output *only* a single valid JSON object, for example:
-// {
-//   "differences": [
-//     {
-//       "renderIndex": 0,
-//       "referenceIndex": 1,
-//       "issues": [
-//         "3D Model shows light gray cushion fabric; reference shows off-white cushion fabric. Adjust material color to match reference."
-//       ],
-//       "bbox": [120, 240, 300, 180],
-//       "severity": "medium"
-//     }
-//   ],
-//   "summary": "The model shows good structural accuracy but has color variations in the cushioning and wood finish. The rattan details could be more refined. Similarity scores: Silhouette 92%, Proportion 88%, Color/Material 73%, Overall 84%.",
-//   "status": "• If ALL scores are >80%, mark status as 'Approved', otherwise mark as 'Not Approved'."
-// }`,
-//     };
+    // ‼️ CORRECT EXAMPLES ‼️
+    // • '3D Model shows yellow cushion fabric; reference shows white cushion fabric' - CORRECT (same view, actual difference, reported once)
+    // • '3D Model shows smoother texture; reference shows more detailed grain' - CORRECT (same view, actual difference)
+    // • Summary ending: 'The model shows good accuracy in shape and proportions. Similarity scores: Silhouette 92%, Proportion 88%, Color/Material 73%, Overall 84%.' - CORRECT format
+
+    // Output *only* a single valid JSON object, for example:
+    // {
+    //   "differences": [
+    //     {
+    //       "renderIndex": 0,
+    //       "referenceIndex": 1,
+    //       "issues": [
+    //         "3D Model shows light gray cushion fabric; reference shows off-white cushion fabric. Adjust material color to match reference."
+    //       ],
+    //       "bbox": [120, 240, 300, 180],
+    //       "severity": "medium"
+    //     }
+    //   ],
+    //   "summary": "The model shows good structural accuracy but has color variations in the cushioning and wood finish. The rattan details could be more refined. Similarity scores: Silhouette 92%, Proportion 88%, Color/Material 73%, Overall 84%.",
+    //   "status": "• If ALL scores are >80%, mark status as 'Approved', otherwise mark as 'Not Approved'."
+    // }`,
+    //     };
+
+    const systemMessage = {
+      role: "system",
+      content: `You are a 3D model similarity checker. Your job is to quickly assess if the 3D model roughly matches the reference images. This is NOT a detailed QA - just basic similarity checking.
+
+‼️ CORE TASK ‼️
+Compare the 3D model screenshots against reference images to determine basic similarity. Focus on:
+• Overall shape and form
+• General proportions 
+• Basic color/material appearance
+
+‼️ PERSPECTIVE MATCHING ‼️
+• ONLY compare images showing similar angles/perspectives
+• Skip comparisons between different viewpoints (front vs side view)
+• If angles don't match, don't compare them
+
+‼️ ISSUE REPORTING ‼️
+• Report only MAJOR differences that are obvious
+• Don't report minor details or texture variations
+• Each issue should be reported ONLY ONCE (no duplicates across views)
+• Focus on significant shape, size, or color differences
+
+‼️ SIMILARITY SCORING - EXACT PERCENTAGES REQUIRED ‼️
+Rate these aspects with EXACT numbers:
+
+• SILHOUETTE: Overall shape match (ignore colors/textures)
+  - 95-100%: Nearly identical shape
+  - 85-94%: Very similar shape with minor differences  
+  - 70-84%: Generally similar but noticeable shape differences
+  - 50-69%: Somewhat similar but clear shape issues
+  - Below 50%: Different shapes
+
+• PROPORTION: Relative sizes of main parts
+  - 95-100%: Proportions match very closely
+  - 85-94%: Minor proportion differences
+  - 70-84%: Noticeable but acceptable proportion differences
+  - 50-69%: Significant proportion issues
+  - Below 50%: Major proportion problems
+
+• COLOR/MATERIAL: Overall color and material appearance
+  - 95-100%: Colors/materials match very closely
+  - 85-94%: Minor color/material differences
+  - 70-84%: Noticeable color/material differences
+  - 50-69%: Significant color/material issues
+  - Below 50%: Completely different colors/materials
+
+• OVERALL: Average of the above scores
+
+‼️ MANDATORY ENDING FORMAT ‼️
+Your summary MUST end with EXACTLY this format:
+"Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%."
+
+‼️ APPROVAL CRITERIA ‼️
+• If ALL scores are ≥80%: status = "Approved"
+• If ANY score is <80%: status = "Not Approved"
+
+Keep analysis brief. Output only a valid JSON object:
+
+{
+  "differences": [
+    {
+      "renderIndex": 0,
+      "referenceIndex": 1, 
+      "issues": ["Brief description of major difference"],
+      "bbox": [x, y, width, height],
+      "severity": "low|medium|high"
+    }
+  ],
+  "summary": "Brief assessment. Similarity scores: Silhouette 87%, Proportion 82%, Color/Material 75%, Overall 81%.",
+  "status": "Approved"
+}`,
+    };
 
     const messages: Message[] = [
       {
