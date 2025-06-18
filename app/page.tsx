@@ -804,13 +804,12 @@ export default function WorktestQA() {
                 </svg>
                 <div>
                   <h3 className="text-lg font-semibold text-green-800">
-                    Congratulations! Technical requirements verified.
+                    🎉 Technical Requirements Passed!
                   </h3>
                   <p className="text-green-700 mt-1">
-                    You have successfully submitted a 3D model that meets our
-                    basic technical requirements for human review! Next Steps:
-                    Please email this verification along with your .glb model to
-                    recruitment@charpstar.com for full evaluation by our team.
+                    Your {selectedDifficulty} level model successfully meets all
+                    our technical standards. It's now ready for expert human
+                    evaluation.
                   </p>
                 </div>
               </div>
@@ -822,13 +821,11 @@ export default function WorktestQA() {
             {!certificateGenerated ? (
               <div className="bg-green-50 p-6 rounded-lg border border-green-200">
                 <h3 className="text-lg font-semibold text-green-800 mb-4">
-                  🎉 Generate Your Certificate
+                  📜 Generate Your Verification Certificate
                 </h3>
                 <p className="text-green-700 mb-4">
-                  Your model meets our technical requirements! Enter your name
-                  below to generate your certificate, then email it along with
-                  your .glb model to recruitment@charpstar.com for full
-                  evaluation by our team.
+                  Get your official verification document to include with your
+                  submission to our recruitment team.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <input
@@ -866,8 +863,8 @@ export default function WorktestQA() {
                   </h3>
                 </div>
                 <p className="text-green-700 mb-4">
-                  Your certificate has been generated for{" "}
-                  <strong>{candidateName}</strong>. Download it and email it
+                  Your verification certificate for{" "}
+                  <strong>{candidateName}</strong> is ready. Please send this
                   along with your .glb model to recruitment@charpstar.com.
                 </p>
                 <button
@@ -894,16 +891,24 @@ export default function WorktestQA() {
           </div>
 
           {/* Instructions */}
-          <div className="mt-6 p-4 rounded-lg bg-green-50">
-            <h3 className="font-semibold mb-2 text-green-900">
-              Next Steps - Human Review Required
+          <div className="mt-6 p-4 rounded-lg bg-blue-50 border border-blue-200">
+            <h3 className="font-semibold mb-2 text-blue-900">
+              📧 What Happens Next?
             </h3>
-            <p className="text-sm text-green-800">
-              Excellent work! Your {selectedDifficulty} level worktest model
-              meets our technical requirements. Download your certificate and
-              email it along with your .glb model to recruitment@charpstar.com
-              for full evaluation by our team.
-            </p>
+            <div className="text-sm text-blue-800 space-y-2">
+              <p>
+                <strong>1. Submit your work:</strong> Email your certificate and
+                .glb model to recruitment@charpstar.com
+              </p>
+              <p>
+                <strong>2. Human QA review:</strong> Our expert team will
+                conduct a detailed evaluation of your model
+              </p>
+              <p>
+                <strong>3. Response timeline:</strong> We'll get back to you
+                within 3 working days with feedback
+              </p>
+            </div>
           </div>
         </div>
       ) : qaComplete ? (
