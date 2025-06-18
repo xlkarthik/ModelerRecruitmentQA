@@ -573,7 +573,7 @@ Be strict with wrong objects, but reasonable with correct objects that have mino
 Summary MUST end: "Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%."
 
 ‼️ APPROVAL RULES ‼️
-• Overall score ≥50% → "Approved" 
+• Overall score ≥70% → "Approved" 
 • Overall score <50% → "Not Approved"
 
 Be strict with wrong objects, reasonable with right objects that have minor differences.
