@@ -487,7 +487,7 @@ Guidelines:
    ‼️ MANDATORY FORMAT ‼️: You MUST end your summary with this EXACT format: 'Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.' Replace X with actual numbers. This is REQUIRED.
    
 ‼️VERY VERY VERY IMPORTANT MAKE DECISION ONLY BASED ON ‼️
-   • If ALL scores are >40%, mark status as 'Approved', otherwise mark as 'Not Approved'.
+   • If ALL scores are >80%, mark status as 'Approved', otherwise mark as 'Not Approved'.
 
 ‼️IMPORTANT‼️
 9. NEVER repeat the same issue across multiple views - report each unique problem only once.
