@@ -308,7 +308,7 @@ export default function WorktestQA() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [loadingQA]);
+  }, [loadingQA, facts]);
 
   // Handle model loading
   useEffect(() => {
