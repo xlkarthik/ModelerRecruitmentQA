@@ -574,7 +574,7 @@ Summary MUST end: "Similarity scores: Silhouette X%, Proportion X%, Color/Materi
 
 ‼️ APPROVAL RULES ‼️
 • Overall score ≥70% → "Approved" 
-• Overall score <50% → "Not Approved"
+• Overall score <70% → "Not Approved"
 
 Be strict with wrong objects, reasonable with right objects that have minor differences.
 
