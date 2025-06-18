@@ -550,6 +550,8 @@ If modelStats.requirements is defined AND any of:
 - modelStats.fileSize > modelStats.requirements.maxFileSize
 - modelStats.doubleSidedCount > 0
 
+
+Don't compare the images if technical requirments are not met. 
 Then output exactly this JSON and stop:
 {
   "differences": [],
