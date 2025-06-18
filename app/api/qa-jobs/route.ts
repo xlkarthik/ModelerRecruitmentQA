@@ -518,13 +518,15 @@ async function processQAJob(
     // }`,
     //     };
 
+    // In your processQAJob function, replace the systemMessage creation with this:
+
     const systemMessage = {
       role: "system",
       content: `You are a 3D model validator. Your PRIMARY job is to REJECT models that don't meet reasonable standards while APPROVING decent matches.
 
 ‼️ PRIMARY GOAL ‼️
 CATCH WRONG OR POOR QUALITY MODELS. Be reasonably strict about what gets approved.
-Approve models that have decent similarity with the references.
+Approve models that have decent similarity with the references AND meet technical requirements.
 
 ‼️ OBJECT TYPE VALIDATION ‼️
 First check: Is this even the same type of object?
@@ -532,6 +534,50 @@ First check: Is this even the same type of object?
 • Reference shows chair → 3D model must be a chair  
 • Reference shows table → 3D model must be a table
 • WRONG OBJECT TYPE = IMMEDIATE REJECTION (all scores <25%)
+
+‼️ TECHNICAL REQUIREMENTS VALIDATION ‼️
+${
+  modelStats && modelStats.requirements
+    ? `
+CURRENT MODEL TECHNICAL SPECS:
+• Triangle Count: ${
+        modelStats.triangles?.toLocaleString() || "N/A"
+      } (Limit: ${modelStats.requirements.maxTriangles?.toLocaleString()})
+• Material Count: ${modelStats.materialCount || "N/A"} (Limit: ${
+        modelStats.requirements.maxMaterials
+      })  
+• File Size: ${(modelStats.fileSize / (1024 * 1024)).toFixed(2)}MB (Limit: ${(
+        modelStats.requirements.maxFileSize /
+        (1024 * 1024)
+      ).toFixed(0)}MB)
+• Double-sided Materials: ${modelStats.doubleSidedCount || 0}
+
+TECHNICAL REQUIREMENTS CHECK:
+${
+  modelStats.triangles > modelStats.requirements.maxTriangles
+    ? "❌ TRIANGLE COUNT EXCEEDED - AUTOMATIC REJECTION"
+    : "✅ Triangle count within limits"
+}
+${
+  modelStats.materialCount > modelStats.requirements.maxMaterials
+    ? "❌ MATERIAL COUNT EXCEEDED - AUTOMATIC REJECTION"
+    : "✅ Material count within limits"
+}
+${
+  modelStats.fileSize > modelStats.requirements.maxFileSize
+    ? "❌ FILE SIZE EXCEEDED - AUTOMATIC REJECTION"
+    : "✅ File size within limits"
+}
+${
+  (modelStats.doubleSidedCount || 0) > 0
+    ? "❌ DOUBLE-SIDED MATERIALS FOUND - AUTOMATIC REJECTION"
+    : "✅ No double-sided materials"
+}
+
+FAILED TECHNICAL REQUIREMENTS = AUTOMATIC REJECTION regardless of similarity scores
+`
+    : "No technical specifications provided."
+}
 
 ‼️ REASONABLE SIMILARITY SCORING ‼️
 Be reasonably demanding with quality. Most decent models should score 50-75%.
@@ -564,20 +610,23 @@ Be reasonably demanding with quality. Most decent models should score 50-75%.
 • Completely different object → All scores <25%
 • Same object but poor quality → Overall <60%
 • Models with major shape/proportion issues → Overall <60%
+• TECHNICAL FAILURES: Triangle/material/file size limits exceeded → Automatic rejection
+• Double-sided materials present → Automatic rejection
 
 ‼️ WHAT TO APPROVE ‼️  
 • Right object type with decent similarity → Overall ≥60%
 • Minor to moderate differences in details are acceptable
-• Focus on: Is this a reasonable match?
+• ALL technical requirements must be met
+• Focus on: Is this a reasonable match that meets technical standards?
 
 ‼️ MANDATORY FORMAT ‼️
 Summary MUST end: "Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%."
 
 ‼️ APPROVAL RULES ‼️
-• Overall score ≥60% → "Approved" 
-• Overall score <60% → "Not Approved"
+• Overall score ≥60% AND all technical requirements passed → "Approved" 
+• Overall score <60% OR any technical requirement failed → "Not Approved"
 
-Be reasonably strict but fair. Approve decent matches.
+Be reasonably strict but fair. Approve decent matches that meet technical standards.
 
 Output only valid JSON:
 {
@@ -590,8 +639,8 @@ Output only valid JSON:
       "severity": "medium"
     }
   ],
-  "summary": "Assessment focusing on reasonable quality match. Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.",
-  "status": "Approved"
+  "summary": "Assessment focusing on reasonable quality match and technical compliance. Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.",
+  "status": "Not Approved"
 }`,
     };
     const messages: Message[] = [
