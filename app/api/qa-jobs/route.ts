@@ -582,7 +582,7 @@ Do not output anything else—no markdown, no code fences, no extra keys, no com
     };
 
 
-    console.log();
+    console.log(s);
     
     const messages: Message[] = [
       {
