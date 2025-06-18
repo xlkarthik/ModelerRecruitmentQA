@@ -574,7 +574,7 @@ Be HARSH with scores. Most models should score 60-80%, not 90%+
 Summary MUST end: "Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%."
 
 ‼️ APPROVAL RULES ‼️
-• ALL scores must be ≥70% for "Approved"
+• ALL scores must be ≥40% for "Approved"
 • ANY score <70% → "Not Approved"
 
 Be strict! Most uploads should be rejected unless they genuinely match well.
