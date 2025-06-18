@@ -360,7 +360,7 @@ export default function WorktestQA() {
   const generateVerificationId = () => {
     // Generate a simple verification ID based on job ID and timestamp
     const timestamp = Date.now().toString(36);
-    const jobIdShort = currentJobId?.slice(-8) || 'unknown';
+    const jobIdShort = currentJobId?.slice(-8) || "unknown";
     return `CHR-${selectedDifficulty.toUpperCase()}-${jobIdShort}-${timestamp}`;
   };
 
@@ -956,7 +956,8 @@ export default function WorktestQA() {
                       Technical Requirements Verified ✓
                     </h3>
                     <p className="text-green-700 mt-1">
-                      You have successfully submitted a 3D model that meets our basic technical requirements for human review!
+                      You have successfully submitted a 3D model that meets our
+                      basic technical requirements for human review!
                     </p>
                   </div>
                 </div>
@@ -965,7 +966,8 @@ export default function WorktestQA() {
                     📧 Next Steps - Human Review Required
                   </h4>
                   <p className="text-green-700 text-sm">
-                    Please email this verification ID along with your .glb model file to{" "}
+                    Please email this verification ID along with your .glb model
+                    file to{" "}
                     <strong className="font-mono bg-green-100 px-2 py-1 rounded">
                       recruitment@charpstar.com
                     </strong>{" "}
@@ -992,8 +994,9 @@ export default function WorktestQA() {
                 </h3>
                 <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
                   <p className="text-red-700">
-                    Your model did not meet the minimum technical requirements. Please review
-                    the feedback below and make the necessary adjustments before resubmitting.
+                    Your model did not meet the minimum technical requirements.
+                    Please review the feedback below and make the necessary
+                    adjustments before resubmitting.
                   </p>
                 </div>
 
@@ -1248,9 +1251,10 @@ export default function WorktestQA() {
                   Technical Requirements Not Met
                 </h3>
                 <p className="text-red-700">
-                  Please review the technical issues listed above and make the necessary
-                  adjustments to your 3D model. Once you've addressed these
-                  concerns, you can upload your improved model for re-evaluation.
+                  Please review the technical issues listed above and make the
+                  necessary adjustments to your 3D model. Once you've addressed
+                  these concerns, you can upload your improved model for
+                  re-evaluation.
                 </p>
               </div>
             )}
