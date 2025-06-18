@@ -520,113 +520,62 @@ async function processQAJob(
 
     // In your processQAJob function, replace the systemMessage creation with this:
 
+    // In your processQAJob function, replace the systemMessage creation with this:
+
     const systemMessage = {
       role: "system",
-      content: `You are a 3D model validator. Your PRIMARY job is to REJECT models that don't meet reasonable standards while APPROVING decent matches.
+      content: `You are a 3D model validator. Keep analysis brief and focused.
 
 ‼️ PRIMARY GOAL ‼️
-CATCH WRONG OR POOR QUALITY MODELS. Be reasonably strict about what gets approved.
-Approve models that have decent similarity with the references AND meet technical requirements.
+1. Check if it's the right type of object (sofa vs chair vs table)
+2. Check if technical requirements are met
+3. Give basic similarity assessment
 
-‼️ OBJECT TYPE VALIDATION ‼️
-First check: Is this even the same type of object?
-• Reference shows sofa → 3D model must be a sofa
-• Reference shows chair → 3D model must be a chair  
-• Reference shows table → 3D model must be a table
-• WRONG OBJECT TYPE = IMMEDIATE REJECTION (all scores <25%)
+‼️ OBJECT TYPE CHECK ‼️
+• Wrong object type = REJECT (all scores <25%)
 
-‼️ TECHNICAL REQUIREMENTS VALIDATION ‼️
+‼️ TECHNICAL REQUIREMENTS ‼️
 ${
   modelStats && modelStats.requirements
     ? `
-CURRENT MODEL TECHNICAL SPECS:
-• Triangle Count: ${
+Current model specs:
+• Triangles: ${
         modelStats.triangles?.toLocaleString() || "N/A"
-      } (Limit: ${modelStats.requirements.maxTriangles?.toLocaleString()})
-• Material Count: ${modelStats.materialCount || "N/A"} (Limit: ${
+      } (max: ${modelStats.requirements.maxTriangles?.toLocaleString()})
+• Materials: ${modelStats.materialCount || "N/A"} (max: ${
         modelStats.requirements.maxMaterials
       })  
-• File Size: ${(modelStats.fileSize / (1024 * 1024)).toFixed(2)}MB (Limit: ${(
+• File size: ${(modelStats.fileSize / (1024 * 1024)).toFixed(1)}MB (max: ${(
         modelStats.requirements.maxFileSize /
         (1024 * 1024)
       ).toFixed(0)}MB)
-• Double-sided Materials: ${modelStats.doubleSidedCount || 0}
+• Double-sided: ${modelStats.doubleSidedCount || 0}
 
-TECHNICAL REQUIREMENTS CHECK:
 ${
-  modelStats.triangles > modelStats.requirements.maxTriangles
-    ? "❌ TRIANGLE COUNT EXCEEDED - AUTOMATIC REJECTION"
-    : "✅ Triangle count within limits"
-}
-${
-  modelStats.materialCount > modelStats.requirements.maxMaterials
-    ? "❌ MATERIAL COUNT EXCEEDED - AUTOMATIC REJECTION"
-    : "✅ Material count within limits"
-}
-${
-  modelStats.fileSize > modelStats.requirements.maxFileSize
-    ? "❌ FILE SIZE EXCEEDED - AUTOMATIC REJECTION"
-    : "✅ File size within limits"
-}
-${
+  modelStats.triangles > modelStats.requirements.maxTriangles ||
+  modelStats.materialCount > modelStats.requirements.maxMaterials ||
+  modelStats.fileSize > modelStats.requirements.maxFileSize ||
   (modelStats.doubleSidedCount || 0) > 0
-    ? "❌ DOUBLE-SIDED MATERIALS FOUND - AUTOMATIC REJECTION"
-    : "✅ No double-sided materials"
+    ? "❌ TECHNICAL REQUIREMENTS FAILED - AUTOMATIC REJECTION"
+    : "✅ Technical requirements passed"
 }
-
-FAILED TECHNICAL REQUIREMENTS = AUTOMATIC REJECTION regardless of similarity scores
 `
-    : "No technical specifications provided."
+    : ""
 }
 
-‼️ REASONABLE SIMILARITY SCORING ‼️
-Be reasonably demanding with quality. Most decent models should score 50-75%.
-
-• SILHOUETTE: Basic shape outline
-  - 70-100%: Excellent shape match
-  - 50-69%: Good shape match with minor differences
-  - 30-49%: Acceptable shape but noticeable differences  
-  - 15-29%: Poor shape match but same object type
-  - 0-14%: WRONG OBJECT TYPE or completely different shape
-
-• PROPORTION: Relative part sizes
-  - 70-100%: Excellent proportions
-  - 50-69%: Good proportions with minor differences
-  - 30-49%: Acceptable proportions with some differences
-  - 15-29%: Poor proportions but same object type
-  - 0-14%: Completely wrong proportions
-
-• COLOR/MATERIAL: Visual appearance  
-  - 70-100%: Excellent color/material match
-  - 50-69%: Good colors with reasonable differences
-  - 30-49%: Different colors but still acceptable
-  - 15-29%: Poor color match but same material type
-  - 0-14%: Completely wrong materials/colors
-
-• OVERALL: Average of above scores
-
-‼️ WHAT TO REJECT ‼️
-• Wrong furniture type (chair vs sofa) → All scores <25%
-• Completely different object → All scores <25%
-• Same object but poor quality → Overall <60%
-• Models with major shape/proportion issues → Overall <60%
-• TECHNICAL FAILURES: Triangle/material/file size limits exceeded → Automatic rejection
-• Double-sided materials present → Automatic rejection
-
-‼️ WHAT TO APPROVE ‼️  
-• Right object type with decent similarity → Overall ≥60%
-• Minor to moderate differences in details are acceptable
-• ALL technical requirements must be met
-• Focus on: Is this a reasonable match that meets technical standards?
-
-‼️ MANDATORY FORMAT ‼️
-Summary MUST end: "Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%."
+‼️ SIMPLE SIMILARITY SCORING ‼️
+• SILHOUETTE: Basic shape (70-100% = good, 50-69% = okay, <50% = poor)
+• PROPORTION: Part sizes (70-100% = good, 50-69% = okay, <50% = poor)  
+• COLOR/MATERIAL: Visual appearance (70-100% = good, 50-69% = okay, <50% = poor)
+• OVERALL: Average of above
 
 ‼️ APPROVAL RULES ‼️
-• Overall score ≥60% AND all technical requirements passed → "Approved" 
-• Overall score <60% OR any technical requirement failed → "Not Approved"
+• Overall ≥60% AND technical requirements passed = "Approved"
+• Otherwise = "Not Approved"
 
-Be reasonably strict but fair. Approve decent matches that meet technical standards.
+Keep it simple. Focus on major differences only.
+
+MANDATORY FORMAT: End summary with "Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%."
 
 Output only valid JSON:
 {
@@ -634,12 +583,12 @@ Output only valid JSON:
     {
       "renderIndex": 0,
       "referenceIndex": 1,
-      "issues": ["Description of difference"],
+      "issues": ["Brief major difference only"],
       "bbox": [x, y, width, height],
       "severity": "medium"
     }
   ],
-  "summary": "Assessment focusing on reasonable quality match and technical compliance. Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.",
+  "summary": "Brief assessment. Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.",
   "status": "Not Approved"
 }`,
     };
