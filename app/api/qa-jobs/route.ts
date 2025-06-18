@@ -575,7 +575,7 @@ Summary MUST end: "Similarity scores: Silhouette X%, Proportion X%, Color/Materi
 
 ‼️ APPROVAL RULES ‼️
 • ALL scores must be ≥40% for "Approved"
-• ANY score <70% → "Not Approved"
+• ANY score <40% → "Not Approved"
 
 Be strict! Most uploads should be rejected unless they genuinely match well.
 
