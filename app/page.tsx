@@ -804,7 +804,7 @@ export default function WorktestQA() {
                 </svg>
                 <div>
                   <h3 className="text-lg font-semibold text-green-800">
-                    🎉 Technical Requirements Passed!
+                    Technical Requirements Passed!
                   </h3>
                   <p className="text-green-700 mt-1">
                     Your {selectedDifficulty} level model successfully meets all
