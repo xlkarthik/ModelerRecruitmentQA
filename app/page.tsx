@@ -393,7 +393,7 @@ export default function WorktestQA() {
         /\s+/g,
         "_"
       )}_${selectedDifficulty}.pdf`;
-      
+
       setCertificateBlob(blob);
       setCertificateFileName(fileName);
       setCertificateGenerated(true);
@@ -418,7 +418,7 @@ export default function WorktestQA() {
   const generateVerificationId = () => {
     // Generate a simple verification ID based on job ID and timestamp
     const timestamp = Date.now().toString(36);
-    const jobIdShort = currentJobId?.slice(-8) || 'unknown';
+    const jobIdShort = currentJobId?.slice(-8) || "unknown";
     return `CHR-${selectedDifficulty.toUpperCase()}-${jobIdShort}-${timestamp}`;
   };
 
@@ -667,8 +667,9 @@ export default function WorktestQA() {
             </div>
           )}
         </div>
-      ) : !qaComplete ? (
-        <>
+      ) : qaComplete && qaResults?.status === "Approved" ? (
+        // Approved Model - Certificate Generation Only
+        <div className="max-w-4xl mx-auto">
           <div className="mb-8">
             <img
               src="https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
@@ -677,385 +678,130 @@ export default function WorktestQA() {
             />
           </div>
 
-          <h1 className="text-2xl font-bold mb-6">Worktest QA Tool</h1>
+          <h1 className="text-2xl font-bold mb-6">
+            Technical Requirements Verified - {currentSpecs.title}
+          </h1>
 
-          {/* Difficulty Selection */}
-          <div className="mb-8 bg-white p-6 rounded-lg shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              Select Worktest Difficulty
-            </h2>
-            <div className="flex gap-4 mb-4">
-              {(Object.keys(WORKTEST_CONFIG) as DifficultyLevel[]).map(
-                (level) => (
-                  <button
-                    key={level}
-                    onClick={() => setSelectedDifficulty(level)}
-                    className={`px-6 py-3 rounded-lg font-medium capitalize transition-colors ${
-                      selectedDifficulty === level
-                        ? "bg-blue-600 text-white shadow-md"
-                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                    }`}
-                  >
-                    {level}
-                    {level === "easy" && " ⭐"}
-                    {level === "medium" && " ⭐⭐"}
-                    {level === "hard" && " ⭐⭐⭐"}
-                  </button>
-                )
-              )}
-            </div>
-
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-blue-900 mb-2">
-                {currentSpecs.title}
-              </h3>
-              <div className="text-sm text-blue-800 space-y-1">
-                <p>
-                  <strong>Max Triangles:</strong>{" "}
-                  {currentSpecs.maxTriangles.toLocaleString()}
-                </p>
-                <p>
-                  <strong>Max Materials:</strong> {currentSpecs.maxMaterials}
-                </p>
-                <p>
-                  <strong>Max File Size:</strong> {currentSpecs.maxFileSize}MB
-                </p>
-                <p>
-                  <strong>Dimensions:</strong> {currentSpecs.dimensions}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Reference Images Display */}
-          <div className="mb-8 bg-white p-6 rounded-lg shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              Reference Images ({selectedDifficulty} difficulty)
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {referenceImages.map((imageUrl, index) => (
-                <div
-                  key={index}
-                  className="aspect-square rounded-lg overflow-hidden bg-gray-100"
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden">
+            {/* Success Message */}
+            <div className="p-6 bg-green-50 border-l-4 border-green-500">
+              <div className="flex items-center">
+                <svg
+                  className="w-6 h-6 text-green-500 mr-3"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
                 >
-                  <img
-                    src={imageUrl}
-                    alt={`Reference ${index + 1}`}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
-                    onClick={() => window.open(imageUrl, "_blank")}
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
                   />
+                </svg>
+                <div>
+                  <h3 className="text-lg font-semibold text-green-800">
+                    Congratulations! Technical requirements verified.
+                  </h3>
+                  <p className="text-green-700 mt-1">
+                    You have successfully submitted a 3D model that meets our
+                    basic technical requirements for human review! Next Steps:
+                    Please email this verification along with your .glb model to
+                    recruitment@charpstar.com for full evaluation by our team.
+                  </p>
                 </div>
-              ))}
-            </div>
-            <p className="text-sm text-gray-600 mt-2">
-              Click on any image to view full size. These are the official
-              reference images your model will be compared against.
-            </p>
-          </div>
-
-          {/* GLB Upload */}
-          <div className="mb-6 bg-white p-6 rounded-lg shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              Upload Your GLB Model
-            </h2>
-            <div
-              onDragEnter={prevent}
-              onDragOver={prevent}
-              onDrop={handleGlbDrop}
-              className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center hover:border-gray-400 transition-colors"
-            >
-              {glbFile ? (
-                <div className="text-center">
-                  <div className="mb-2">
-                    <svg
-                      className="w-12 h-12 mx-auto text-green-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      ></path>
-                    </svg>
-                  </div>
-                  <p className="font-medium text-gray-900">{glbFile.name}</p>
-                  <p className="text-sm text-gray-500">
-                    {(glbFile.size / (1024 * 1024)).toFixed(2)} MB
-                  </p>
-                  <button
-                    onClick={resetAll}
-                    className="mt-2 text-sm text-gray-500 hover:text-gray-700 underline"
-                  >
-                    Remove and upload different file
-                  </button>
-                </div>
-              ) : (
-        // Main Form Interface
-                <>
-                  <div className="mb-4 text-gray-400">
-                    <svg
-                      className="w-16 h-16 mx-auto"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                      ></path>
-                    </svg>
-                  </div>
-                  <p className="mb-2 text-lg text-center font-medium">
-                    Drop your GLB file here
-                  </p>
-                  <p className="mb-4 text-sm text-gray-500 text-center">or</p>
-                  <label className="cursor-pointer">
-                    <span className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                      Browse Files
-                    </span>
-                    <input
-                      type="file"
-                      accept=".glb"
-                      hidden
-                      onChange={handleFileSelect}
-                    />
-                  </label>
-                  <p className="mt-4 text-xs text-gray-500 text-center">
-                    Only .glb files are accepted
-                  </p>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Screenshots */}
-          {screenshots.length > 0 && (
-            <div className="mb-6 bg-white p-6 rounded-lg shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Generated Screenshots
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {screenshots.map((screenshot, index) => (
-                  <div
-                    key={index}
-                    className="aspect-square rounded-lg overflow-hidden bg-gray-100"
-                  >
-                    <img
-                      src={screenshot}
-                      alt={`Screenshot ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
               </div>
             </div>
-          )}
-
-          {/* Error and status messages */}
-          {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600">{error}</p>
-            </div>
-          )}
-          {statusMessage && (
-            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-blue-600">{statusMessage}</p>
-            </div>
-          )}
-
-          {/* Run QA button */}
-          <button
-            onClick={handleRunQA}
-            disabled={isProcessing || screenshots.length !== 4}
-            className="w-full p-4 bg-green-600 text-white rounded-lg font-medium text-lg disabled:opacity-50 disabled:bg-gray-400 hover:bg-green-700 transition-colors"
-          >
-            {isProcessing
-              ? "Processing..."
-              : `Run QA for ${
-                  selectedDifficulty.charAt(0).toUpperCase() +
-                  selectedDifficulty.slice(1)
-                } Worktest`}
-          </button>
-
-          {/* Instructions */}
-          <div className="mt-6 bg-gray-100 p-6 rounded-lg">
-            <h3 className="font-semibold text-gray-800 mb-3">How it works:</h3>
-            <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600">
-              <li>
-                Select your worktest difficulty level (Easy, Medium, or Hard)
-              </li>
-              <li>Upload your GLB model file</li>
-              <li>
-                The tool will automatically capture 4 screenshots from different
-                angles
-              </li>
-              <li>
-                Your model will be compared against the official reference
-                images
-              </li>
-              <li>
-                Receive detailed feedback and verification for human review
-              </li>
-            </ol>
           </div>
 
-          {/* Hidden model-viewer */}
-          {glbPreviewUrl && viewerReady && (
-            <model-viewer
-              ref={(el) => (viewerRef.current = el as ModelViewerElement)}
-              src={glbPreviewUrl}
-              loading="eager"
-              exposure="1.3"
-              environment-image="https://cdn.charpstar.net/Demos/warm.hdr"
-              camera-orbit="0deg 75deg 150%"
-              disable-zoom
-              interaction-prompt="none"
-              style={{
-                width: 1024,
-                height: 1024,
-                position: "absolute",
-                top: 0,
-                left: 0,
-                opacity: 0,
-                pointerEvents: "none",
-              }}
-            />
-          )}
-        </>
-      ) : (
-        // QA Results Screen - ONLY FOR NON-APPROVED MODELS
-        qaResults?.status === "Approved" ? (
-          // Approved Model - Certificate Generation Only
-          <div className="max-w-4xl mx-auto">
-            <div className="mb-8">
-              <img
-                src="https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
-                alt="CharpstAR Logo"
-                className="h-10"
-              />
-            </div>
-
-            <h1 className="text-2xl font-bold mb-6">
-              Technical Requirements Verified - {currentSpecs.title}
-            </h1>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden">
-              {/* Success Message */}
-              <div className="p-6 bg-green-50 border-l-4 border-green-500">
-                <div className="flex items-center">
+          {/* Certificate Generation Section */}
+          <div className="flex flex-col gap-4 mb-6">
+            {!certificateGenerated ? (
+              <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+                <h3 className="text-lg font-semibold text-green-800 mb-4">
+                  🎉 Generate Your Certificate
+                </h3>
+                <p className="text-green-700 mb-4">
+                  Your model meets our technical requirements! Enter your name
+                  below to generate your certificate, then email it along with
+                  your .glb model to recruitment@charpstar.com for full
+                  evaluation by our team.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <input
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={candidateName}
+                    onChange={(e) => setCandidateName(e.target.value)}
+                    className="flex-1 px-4 py-3 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                  <button
+                    onClick={generateCertificate}
+                    disabled={!candidateName.trim()}
+                    className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Generate Certificate
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+                <div className="flex items-center mb-4">
                   <svg
-                    className="w-6 h-6 text-green-500 mr-3"
+                    className="w-8 h-8 text-green-500 mr-3"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
                     <path
                       fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
                       clipRule="evenodd"
                     />
                   </svg>
-                  <div>
-                    <h3 className="text-lg font-semibold text-green-800">
-                      Congratulations! Technical requirements verified.
-                    </h3>
-                    <p className="text-green-700 mt-1">
-                      You have successfully submitted a 3D model that meets our basic technical requirements for human review! Next Steps: Please email this verification along with your .glb model to recruitment@charpstar.com for full evaluation by our team.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Certificate Generation Section */}
-            <div className="flex flex-col gap-4 mb-6">
-              {!certificateGenerated ? (
-                <div className="bg-green-50 p-6 rounded-lg border border-green-200">
-                  <h3 className="text-lg font-semibold text-green-800 mb-4">
-                    🎉 Generate Your Certificate
+                  <h3 className="text-lg font-semibold text-green-800">
+                    Certificate Generated Successfully!
                   </h3>
-                  <p className="text-green-700 mb-4">
-                    Your model meets our technical requirements! Enter your name below to
-                    generate your certificate, then email it along with your .glb model to recruitment@charpstar.com for full evaluation by our team.
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <input
-                      type="text"
-                      placeholder="Enter your full name"
-                      value={candidateName}
-                      onChange={(e) => setCandidateName(e.target.value)}
-                      className="flex-1 px-4 py-3 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    />
-                    <button
-                      onClick={generateCertificate}
-                      disabled={!candidateName.trim()}
-                      className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      Generate Certificate
-                    </button>
-                  </div>
                 </div>
-              ) : (
-                <div className="bg-green-50 p-6 rounded-lg border border-green-200">
-                  <div className="flex items-center mb-4">
-                    <svg
-                      className="w-8 h-8 text-green-500 mr-3"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <h3 className="text-lg font-semibold text-green-800">
-                      Certificate Generated Successfully!
-                    </h3>
-                  </div>
-                  <p className="text-green-700 mb-4">
-                    Your certificate has been generated for <strong>{candidateName}</strong>. 
-                    Download it and email it along with your .glb model to recruitment@charpstar.com.
-                  </p>
-                  <button
-                    onClick={downloadCertificate}
-                    className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors mr-4"
-                  >
-                    📄 Download PDF Certificate
-                  </button>
-                  <button
-                    onClick={() => setCertificateGenerated(false)}
-                    className="text-green-600 hover:text-green-700 px-4 py-3 font-medium transition-colors"
-                  >
-                    Generate for Different Name
-                  </button>
-                </div>
-              )}
+                <p className="text-green-700 mb-4">
+                  Your certificate has been generated for{" "}
+                  <strong>{candidateName}</strong>. Download it and email it
+                  along with your .glb model to recruitment@charpstar.com.
+                </p>
+                <button
+                  onClick={downloadCertificate}
+                  className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors mr-4"
+                >
+                  📄 Download PDF Certificate
+                </button>
+                <button
+                  onClick={() => setCertificateGenerated(false)}
+                  className="text-green-600 hover:text-green-700 px-4 py-3 font-medium transition-colors"
+                >
+                  Generate for Different Name
+                </button>
+              </div>
+            )}
 
-              <button
-                onClick={resetAll}
-                className="w-full border border-gray-300 text-gray-800 rounded-lg py-4 font-medium hover:bg-gray-50 transition-colors"
-              >
-                Test Another Model
-              </button>
-            </div>
-
-            {/* Instructions */}
-            <div className="mt-6 p-4 rounded-lg bg-green-50">
-              <h3 className="font-semibold mb-2 text-green-900">
-                Next Steps - Human Review Required
-              </h3>
-              <p className="text-sm text-green-800">
-                Excellent work! Your {selectedDifficulty} level worktest model meets our technical requirements. 
-                Download your certificate and email it along with your .glb model to recruitment@charpstar.com for full evaluation by our team.
-              </p>
-            </div>
+            <button
+              onClick={resetAll}
+              className="w-full border border-gray-300 text-gray-800 rounded-lg py-4 font-medium hover:bg-gray-50 transition-colors"
+            >
+              Test Another Model
+            </button>
           </div>
-        ) : (
+
+          {/* Instructions */}
+          <div className="mt-6 p-4 rounded-lg bg-green-50">
+            <h3 className="font-semibold mb-2 text-green-900">
+              Next Steps - Human Review Required
+            </h3>
+            <p className="text-sm text-green-800">
+              Excellent work! Your {selectedDifficulty} level worktest model
+              meets our technical requirements. Download your certificate and
+              email it along with your .glb model to recruitment@charpstar.com
+              for full evaluation by our team.
+            </p>
+          </div>
+        </div>
+      ) : qaComplete ? (
         // Non-Approved Model - Full QA Results
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
@@ -1128,78 +874,51 @@ export default function WorktestQA() {
               </div>
             </div>
 
-            {/* Approval Message or Issues */}
-            {qaResults?.status === "Approved" ? (
-              <div className="p-6 bg-green-50 border-l-4 border-green-500">
-                <div className="flex items-center">
-                  <svg
-                    className="w-6 h-6 text-green-500 mr-3"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <div>
-                    <h3 className="text-lg font-semibold text-green-800">
-                      Congratulations! Technical requirements verified.
-                    </h3>
-                    <p className="text-green-700 mt-1">
-                      You have successfully submitted a 3D model that meets our basic technical requirements for human review! Next Steps: Please email this verification along with your .glb model to recruitment@charpstar.com for full evaluation by our team.
-                    </p>
+            {/* Issues Section for Non-Approved Models */}
+            <div className="p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 text-red-600">
+                Issues Found - Model Needs Improvement
+              </h3>
+              <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+                <p className="text-red-700">
+                  Your model did not meet the approval criteria. Please review
+                  the detailed feedback below and make the necessary adjustments
+                  before resubmitting.
+                </p>
+              </div>
+
+              {/* QA Summary */}
+              {qaResults?.summary && (
+                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                  <h4 className="font-medium text-blue-800 mb-2">
+                    QA Analysis Summary
+                  </h4>
+                  <p className="text-blue-700">{qaResults.summary}</p>
+                </div>
+              )}
+
+              {qaResults?.differences && qaResults.differences.length > 0 && (
+                <div className="space-y-4">
+                  <h4 className="font-medium text-gray-800">
+                    Issues to Address:
+                  </h4>
+                  <div className="space-y-2">
+                    {qaResults.differences.map((diff, index) => (
+                      <div key={index}>
+                        {diff.issues.map((issue, issueIndex) => (
+                          <div
+                            key={issueIndex}
+                            className="p-3 bg-gray-50 border-l-4 border-gray-400 rounded"
+                          >
+                            <p className="text-sm text-gray-700">• {issue}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
-            ) : (
-              /* Issues Section for Non-Approved Models */
-              <div className="p-6 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 text-red-600">
-                  Issues Found - Model Needs Improvement
-                </h3>
-                <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
-                  <p className="text-red-700">
-                    Your model did not meet the approval criteria. Please review
-                    the detailed feedback below and make the necessary
-                    adjustments before resubmitting.
-                  </p>
-                </div>
-
-                {/* QA Summary */}
-                {qaResults?.summary && (
-                  <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
-                    <h4 className="font-medium text-blue-800 mb-2">
-                      QA Analysis Summary
-                    </h4>
-                    <p className="text-blue-700">{qaResults.summary}</p>
-                  </div>
-                )}
-
-                {qaResults?.differences && qaResults.differences.length > 0 && (
-                  <div className="space-y-4">
-                    <h4 className="font-medium text-gray-800">
-                      Issues to Address:
-                    </h4>
-                    <div className="space-y-2">
-                      {qaResults.differences.map((diff, index) => (
-                        <div key={index}>
-                          {diff.issues.map((issue, issueIndex) => (
-                            <div
-                              key={issueIndex}
-                              className="p-3 bg-gray-50 border-l-4 border-gray-400 rounded"
-                            >
-                              <p className="text-sm text-gray-700">• {issue}</p>
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Visual Comparison Section */}
             <div className="p-6">
@@ -1381,47 +1100,17 @@ export default function WorktestQA() {
 
           {/* Action Buttons */}
           <div className="flex flex-col gap-4 mb-6">
-            {qaResults?.status === "Approved" ? (
-              /* Certificate Generation for Approved Models */
-              <div className="bg-green-50 p-6 rounded-lg border border-green-200">
-                <h3 className="text-lg font-semibold text-green-800 mb-4">
-                  🎉 Generate Your Certificate
-                </h3>
-                <p className="text-green-700 mb-4">
-                  Your model meets our technical requirements! Enter your name below to
-                  generate your certificate, then email it along with your .glb model to recruitment@charpstar.com for full evaluation by our team.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <input
-                    type="text"
-                    placeholder="Enter your full name"
-                    value={candidateName}
-                    onChange={(e) => setCandidateName(e.target.value)}
-                    className="flex-1 px-4 py-3 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
-                  <button
-                    onClick={generateCertificate}
-                    disabled={!candidateName.trim()}
-                    className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Generate Certificate
-                  </button>
-                </div>
-              </div>
-            ) : (
-              /* Improvement Message for Non-Approved Models */
-              <div className="bg-red-50 p-6 rounded-lg border border-red-200">
-                <h3 className="text-lg font-semibold text-red-800 mb-2">
-                  Model Requires Improvements
-                </h3>
-                <p className="text-red-700">
-                  Please review the issues listed above and make the necessary
-                  adjustments to your 3D model. Once you've addressed these
-                  concerns, you can upload your improved model for
-                  re-evaluation.
-                </p>
-              </div>
-            )}
+            {/* Improvement Message for Non-Approved Models */}
+            <div className="bg-red-50 p-6 rounded-lg border border-red-200">
+              <h3 className="text-lg font-semibold text-red-800 mb-2">
+                Model Requires Improvements
+              </h3>
+              <p className="text-red-700">
+                Please review the issues listed above and make the necessary
+                adjustments to your 3D model. Once you've addressed these
+                concerns, you can upload your improved model for re-evaluation.
+              </p>
+            </div>
 
             <button
               onClick={resetAll}
@@ -1431,455 +1120,276 @@ export default function WorktestQA() {
             </button>
           </div>
 
-          {/* Certificate Modal */}
-          {showCertificateModal && certificateData && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          {/* Additional Info */}
+          <div className="mt-6 p-4 rounded-lg bg-blue-50">
+            <h3 className="font-semibold mb-2 text-blue-900">Next Steps</h3>
+            <p className="text-sm text-blue-800">
+              Your model has been analyzed against the {selectedDifficulty}{" "}
+              worktest requirements. Review the feedback above to understand
+              what needs improvement. You can test your updated model anytime.
+            </p>
+          </div>
+        </div>
+      ) : (
+        // Main Form Interface
+        <>
+          <div className="mb-8">
+            <img
+              src="https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
+              alt="CharpstAR Logo"
+              className="h-10"
+            />
+          </div>
+
+          <h1 className="text-2xl font-bold mb-6">Worktest QA Tool</h1>
+
+          {/* Difficulty Selection */}
+          <div className="mb-8 bg-white p-6 rounded-lg shadow-sm">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">
+              Select Worktest Difficulty
+            </h2>
+            <div className="flex gap-4 mb-4">
+              {(Object.keys(WORKTEST_CONFIG) as DifficultyLevel[]).map(
+                (level) => (
+                  <button
+                    key={level}
+                    onClick={() => setSelectedDifficulty(level)}
+                    className={`px-6 py-3 rounded-lg font-medium capitalize transition-colors ${
+                      selectedDifficulty === level
+                        ? "bg-blue-600 text-white shadow-md"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
+                  >
+                    {level}
+                    {level === "easy" && " ⭐"}
+                    {level === "medium" && " ⭐⭐"}
+                    {level === "hard" && " ⭐⭐⭐"}
+                  </button>
+                )
+              )}
+            </div>
+
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-blue-900 mb-2">
+                {currentSpecs.title}
+              </h3>
+              <div className="text-sm text-blue-800 space-y-1">
+                <p>
+                  <strong>Max Triangles:</strong>{" "}
+                  {currentSpecs.maxTriangles.toLocaleString()}
+                </p>
+                <p>
+                  <strong>Max Materials:</strong> {currentSpecs.maxMaterials}
+                </p>
+                <p>
+                  <strong>Max File Size:</strong> {currentSpecs.maxFileSize}MB
+                </p>
+                <p>
+                  <strong>Dimensions:</strong> {currentSpecs.dimensions}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Reference Images Display */}
+          <div className="mb-8 bg-white p-6 rounded-lg shadow-sm">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">
+              Reference Images ({selectedDifficulty} difficulty)
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {referenceImages.map((imageUrl, index) => (
+                <div
+                  key={index}
+                  className="aspect-square rounded-lg overflow-hidden bg-gray-100"
+                >
+                  <img
+                    src={imageUrl}
+                    alt={`Reference ${index + 1}`}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
+                    onClick={() => window.open(imageUrl, "_blank")}
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="text-sm text-gray-600 mt-2">
+              Click on any image to view full size. These are the official
+              reference images your model will be compared against.
+            </p>
+          </div>
+
+          {/* GLB Upload */}
+          <div className="mb-6 bg-white p-6 rounded-lg shadow-sm">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">
+              Upload Your GLB Model
+            </h2>
+            <div
+              onDragEnter={prevent}
+              onDragOver={prevent}
+              onDrop={handleGlbDrop}
+              className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center hover:border-gray-400 transition-colors"
+            >
+              {glbFile ? (
                 <div className="text-center">
-                  <div className="mb-4">
+                  <div className="mb-2">
                     <svg
-                      className="w-16 h-16 text-green-500 mx-auto"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
+                      className="w-12 h-12 mx-auto text-green-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
                     >
                       <path
-                        fillRule="evenodd"
-                        d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      ></path>
                     </svg>
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    Certificate Ready!
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    Your certificate has been generated successfully. Click the
-                    button below to download it.
+                  <p className="font-medium text-gray-900">{glbFile.name}</p>
+                  <p className="text-sm text-gray-500">
+                    {(glbFile.size / (1024 * 1024)).toFixed(2)} MB
                   </p>
-                  <div className="flex flex-col gap-3">
-                    <button
-                      onClick={downloadCertificate}
-                      className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
-                    >
-                      Download Certificate
-                    </button>
-                    <button
-                      onClick={() => setShowCertificateModal(false)}
-                      className="text-gray-500 hover:text-gray-700 transition-colors"
-                    >
-                      Close
-                    </button>
-                  </div>
+                  <button
+                    onClick={resetAll}
+                    className="mt-2 text-sm text-gray-500 hover:text-gray-700 underline"
+                  >
+                    Remove and upload different file
+                  </button>
                 </div>
+              ) : (
+                <>
+                  <div className="mb-4 text-gray-400">
+                    <svg
+                      className="w-16 h-16 mx-auto"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                      ></path>
+                    </svg>
+                  </div>
+                  <p className="mb-2 text-lg text-center font-medium">
+                    Drop your GLB file here
+                  </p>
+                  <p className="mb-4 text-sm text-gray-500 text-center">or</p>
+                  <label className="cursor-pointer">
+                    <span className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                      Browse Files
+                    </span>
+                    <input
+                      type="file"
+                      accept=".glb"
+                      hidden
+                      onChange={handleFileSelect}
+                    />
+                  </label>
+                  <p className="mt-4 text-xs text-gray-500 text-center">
+                    Only .glb files are accepted
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Screenshots */}
+          {screenshots.length > 0 && (
+            <div className="mb-6 bg-white p-6 rounded-lg shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Generated Screenshots
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {screenshots.map((screenshot, index) => (
+                  <div
+                    key={index}
+                    className="aspect-square rounded-lg overflow-hidden bg-gray-100"
+                  >
+                    <img
+                      src={screenshot}
+                      alt={`Screenshot ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
-          {/* Additional Info */}
-          <div
-            className={`mt-6 p-4 rounded-lg ${
-              qaResults?.status === "Approved" ? "bg-green-50" : "bg-blue-50"
-            }`}
+          {/* Error and status messages */}
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600">{error}</p>
+            </div>
+          )}
+          {statusMessage && (
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-blue-600">{statusMessage}</p>
+            </div>
+          )}
+
+          {/* Run QA button */}
+          <button
+            onClick={handleRunQA}
+            disabled={isProcessing || screenshots.length !== 4}
+            className="w-full p-4 bg-green-600 text-white rounded-lg font-medium text-lg disabled:opacity-50 disabled:bg-gray-400 hover:bg-green-700 transition-colors"
           >
-            <h3
-              className={`font-semibold mb-2 ${
-                qaResults?.status === "Approved"
-                  ? "text-green-900"
-                  : "text-blue-900"
-              }`}
-            >
-              {qaResults?.status === "Approved"
-                ? "Congratulations!"
-                : "Next Steps"}
-            </h3>
-            <p
-              className={`text-sm ${
-                qaResults?.status === "Approved"
-                  ? "text-green-800"
-                  : "text-blue-800"
-              }`}
-            >
-              {qaResults?.status === "Approved"
-                ? `Excellent work! Your ${selectedDifficulty} level worktest model meets all requirements. Download your certificate and email it along with your .glb model to recruitment@charpstar.com for full evaluation by our team.`
-                : `Your model has been analyzed against the ${selectedDifficulty} worktest requirements. Review the feedback above to understand what needs improvement. You can test your updated model anytime.`}
-            </p>
+            {isProcessing
+              ? "Processing..."
+              : `Run QA for ${
+                  selectedDifficulty.charAt(0).toUpperCase() +
+                  selectedDifficulty.slice(1)
+                } Worktest`}
+          </button>
+
+          {/* Instructions */}
+          <div className="mt-6 bg-gray-100 p-6 rounded-lg">
+            <h3 className="font-semibold text-gray-800 mb-3">How it works:</h3>
+            <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600">
+              <li>
+                Select your worktest difficulty level (Easy, Medium, or Hard)
+              </li>
+              <li>Upload your GLB model file</li>
+              <li>
+                The tool will automatically capture 4 screenshots from different
+                angles
+              </li>
+              <li>
+                Your model will be compared against the official reference
+                images
+              </li>
+              <li>
+                Receive detailed feedback and verification for human review
+              </li>
+            </ol>
           </div>
-          </div>
-        ) : (
-          // Non-Approved Model - Full QA Results
-          <div className="max-w-4xl mx-auto">
-            <div className="mb-8">
-              <img
-                src="https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
-                alt="CharpstAR Logo"
-                className="h-10"
-              />
-            </div>
 
-            <h1 className="text-2xl font-bold mb-6">
-              QA Results - {currentSpecs.title}
-            </h1>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden">
-              {/* QA Status Header */}
-              <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">
-                      QA Results
-                    </h2>
-                    {qaResults?.summary && (
-                      <p className="text-gray-700 mt-2 text-base">
-                        {qaResults.summary}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <div
-                      className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
-                        qaResults?.status === "Approved"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {qaResults?.status === "Approved" ? (
-                        <>
-                          <svg
-                            className="w-4 h-4 mr-2"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          Approved
-                        </>
-                      ) : (
-                        <>
-                          <svg
-                            className="w-4 h-4 mr-2"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          Needs Review
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Issues Section for Non-Approved Models */}
-              <div className="p-6 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 text-red-600">
-                  Issues Found - Model Needs Improvement
-                </h3>
-                <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
-                  <p className="text-red-700">
-                    Your model did not meet the approval criteria. Please review
-                    the detailed feedback below and make the necessary
-                    adjustments before resubmitting.
-                  </p>
-                </div>
-
-                {/* QA Summary */}
-                {qaResults?.summary && (
-                  <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
-                    <h4 className="font-medium text-blue-800 mb-2">
-                      QA Analysis Summary
-                    </h4>
-                    <p className="text-blue-700">{qaResults.summary}</p>
-                  </div>
-                )}
-
-                {qaResults?.differences && qaResults.differences.length > 0 && (
-                  <div className="space-y-4">
-                    <h4 className="font-medium text-gray-800">
-                      Issues to Address:
-                    </h4>
-                    <div className="space-y-2">
-                      {qaResults.differences.map((diff, index) => (
-                        <div key={index}>
-                          {diff.issues.map((issue, issueIndex) => (
-                            <div
-                              key={issueIndex}
-                              className="p-3 bg-gray-50 border-l-4 border-gray-400 rounded"
-                            >
-                              <p className="text-sm text-gray-700">• {issue}</p>
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Visual Comparison Section */}
-              <div className="p-6">
-                <h2 className="text-lg font-semibold mb-4">Visual Comparison</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Model Screenshots */}
-                  <div>
-                    <h3 className="font-medium mb-3 text-gray-700">Your Model</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      {screenshots.map((screenshot, index) => (
-                        <div
-                          key={index}
-                          className="aspect-square rounded-lg overflow-hidden bg-gray-100"
-                        >
-                          <img
-                            src={screenshot}
-                            alt={`Your model ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Reference Images */}
-                  <div>
-                    <h3 className="font-medium mb-3 text-gray-700">
-                      Reference Images
-                    </h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      {referenceImages.slice(0, 4).map((refImage, index) => (
-                        <div
-                          key={index}
-                          className="aspect-square rounded-lg overflow-hidden bg-gray-100"
-                        >
-                          <img
-                            src={refImage}
-                            alt={`Reference ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <hr className="border-t border-gray-200" />
-
-              {/* Technical Analysis Section */}
-              <div className="p-6">
-                <h2 className="text-lg font-semibold mb-4">Technical Analysis</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Worktest Requirements */}
-                  <div>
-                    <h3 className="font-medium mb-3 text-gray-700">
-                      Worktest Requirements
-                    </h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Max Triangles</span>
-                        <span className="text-sm font-mono">
-                          {currentSpecs.maxTriangles.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Max Materials</span>
-                        <span className="text-sm font-mono">
-                          {currentSpecs.maxMaterials}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Max File Size</span>
-                        <span className="text-sm font-mono">
-                          {currentSpecs.maxFileSize}MB
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Model Statistics */}
-                  <div>
-                    <h3 className="font-medium mb-3 text-gray-700">
-                      Your Model Stats
-                    </h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center">
-                        {modelStats?.triangles &&
-                        modelStats.triangles <= currentSpecs.maxTriangles ? (
-                          <span className="inline-flex items-center justify-center w-5 h-5 mr-3 bg-green-100 text-green-800 rounded-full text-xs">
-                            ✓
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center justify-center w-5 h-5 mr-3 bg-red-100 text-red-800 rounded-full text-xs">
-                            ✗
-                          </span>
-                        )}
-                        <span className="text-sm">
-                          Triangles:{" "}
-                          {modelStats?.triangles?.toLocaleString() || "N/A"}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center">
-                        {modelStats?.materialCount &&
-                        modelStats.materialCount <= currentSpecs.maxMaterials ? (
-                          <span className="inline-flex items-center justify-center w-5 h-5 mr-3 bg-green-100 text-green-800 rounded-full text-xs">
-                            ✓
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center justify-center w-5 h-5 mr-3 bg-red-100 text-red-800 rounded-full text-xs">
-                            ✗
-                          </span>
-                        )}
-                        <span className="text-sm">
-                          Materials: {modelStats?.materialCount || "N/A"}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center">
-                        {glbFile &&
-                        glbFile.size / (1024 * 1024) <=
-                          currentSpecs.maxFileSize ? (
-                          <span className="inline-flex items-center justify-center w-5 h-5 mr-3 bg-green-100 text-green-800 rounded-full text-xs">
-                            ✓
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center justify-center w-5 h-5 mr-3 bg-red-100 text-red-800 rounded-full text-xs">
-                            ✗
-                          </span>
-                        )}
-                        <span className="text-sm">
-                          File Size:{" "}
-                          {glbFile
-                            ? `${(glbFile.size / (1024 * 1024)).toFixed(2)}MB`
-                            : "N/A"}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center">
-                        {modelStats?.doubleSidedCount === 0 ? (
-                          <span className="inline-flex items-center justify-center w-5 h-5 mr-3 bg-green-100 text-green-800 rounded-full text-xs">
-                            ✓
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center justify-center w-5 h-5 mr-3 bg-red-100 text-red-800 rounded-full text-xs">
-                            ✗
-                          </span>
-                        )}
-                        <span className="text-sm">
-                          Double-sided Materials:{" "}
-                          {modelStats?.doubleSidedCount || "0"}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center">
-                        <span className="inline-flex items-center justify-center w-5 h-5 mr-3 bg-gray-100 text-gray-800 rounded-full text-xs">
-                          i
-                        </span>
-                        <span className="text-sm">
-                          Mesh Count: {modelStats?.meshCount || "N/A"}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center">
-                        <span className="inline-flex items-center justify-center w-5 h-5 mr-3 bg-gray-100 text-gray-800 rounded-full text-xs">
-                          i
-                        </span>
-                        <span className="text-sm">
-                          Vertices:{" "}
-                          {modelStats?.vertices?.toLocaleString() || "N/A"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col gap-4 mb-6">
-              {/* Improvement Message for Non-Approved Models */}
-              <div className="bg-red-50 p-6 rounded-lg border border-red-200">
-                <h3 className="text-lg font-semibold text-red-800 mb-2">
-                  Model Requires Improvements
-                </h3>
-                <p className="text-red-700">
-                  Please review the issues listed above and make the necessary
-                  adjustments to your 3D model. Once you've addressed these
-                  concerns, you can upload your improved model for
-                  re-evaluation.
-                </p>
-              </div>
-
-              <button
-                onClick={resetAll}
-                className="w-full border border-gray-300 text-gray-800 rounded-lg py-4 font-medium hover:bg-gray-50 transition-colors"
-              >
-                Test Another Model
-              </button>
-            </div>
-
-            {/* Certificate Modal */}
-            {showCertificateModal && certificateData && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                  <div className="text-center">
-                    <div className="mb-4">
-                      <svg
-                        className="w-16 h-16 text-green-500 mx-auto"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                      Certificate Ready!
-                    </h3>
-                    <p className="text-gray-600 mb-6">
-                      Your certificate has been generated successfully. Click the
-                      button below to download it.
-                    </p>
-                    <div className="flex flex-col gap-3">
-                      <button
-                        onClick={downloadCertificate}
-                        className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
-                      >
-                        Download Certificate
-                      </button>
-                      <button
-                        onClick={() => setShowCertificateModal(false)}
-                        className="text-gray-500 hover:text-gray-700 transition-colors"
-                      >
-                        Close
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Additional Info */}
-            <div className="mt-6 p-4 rounded-lg bg-blue-50">
-              <h3 className="font-semibold mb-2 text-blue-900">
-                Next Steps
-              </h3>
-              <p className="text-sm text-blue-800">
-                Your model has been analyzed against the {selectedDifficulty} worktest requirements. Review the feedback above to understand what needs improvement. You can test your updated model anytime.
-              </p>
-            </div>
-          </div>
-        )
+          {/* Hidden model-viewer */}
+          {glbPreviewUrl && viewerReady && (
+            <model-viewer
+              ref={(el) => (viewerRef.current = el as ModelViewerElement)}
+              src={glbPreviewUrl}
+              loading="eager"
+              exposure="1.3"
+              environment-image="https://cdn.charpstar.net/Demos/warm.hdr"
+              camera-orbit="0deg 75deg 150%"
+              disable-zoom
+              interaction-prompt="none"
+              style={{
+                width: 1024,
+                height: 1024,
+                position: "absolute",
+                top: 0,
+                left: 0,
+                opacity: 0,
+                pointerEvents: "none",
+              }}
+            />
+          )}
+        </>
       )}
     </div>
   );
