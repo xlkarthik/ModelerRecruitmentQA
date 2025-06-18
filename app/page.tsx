@@ -357,54 +357,11 @@ export default function WorktestQA() {
     e.stopPropagation();
   };
 
-  const generateCertificate = async () => {
-    if (!candidateName.trim()) {
-      setError("Please enter your name to generate the certificate");
-      return;
-    }
-
-    if (!currentJobId || !qaResults) {
-      setError("No QA results available for certificate generation");
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/generate-certificate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          jobId: currentJobId,
-          candidateName: candidateName.trim(),
-          worktestLevel: selectedDifficulty,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to generate certificate");
-      }
-
-      // Download the PDF directly
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `CharpstAR_Certificate_${candidateName.replace(
-        /\s+/g,
-        "_"
-      )}_${selectedDifficulty}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch (err: any) {
-      setError(err.message);
-    }
-  };
-
-  const downloadCertificate = () => {
-    // This function is no longer needed since we download directly
-    // but keeping it for compatibility
+  const generateVerificationId = () => {
+    // Generate a simple verification ID based on job ID and timestamp
+    const timestamp = Date.now().toString(36);
+    const jobIdShort = currentJobId?.slice(-8) || 'unknown';
+    return `CHR-${selectedDifficulty.toUpperCase()}-${jobIdShort}-${timestamp}`;
   };
 
   const resetAll = () => {
@@ -880,7 +837,7 @@ export default function WorktestQA() {
                 images
               </li>
               <li>
-                Receive detailed QA feedback and a certificate if approved
+                Receive detailed feedback and verification for human review
               </li>
             </ol>
           </div>
@@ -920,22 +877,20 @@ export default function WorktestQA() {
           </div>
 
           <h1 className="text-2xl font-bold mb-6">
-            QA Results - {currentSpecs.title}
+            Technical Verification - {currentSpecs.title}
           </h1>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden">
-            {/* QA Status Header */}
+            {/* Technical Verification Header */}
             <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-semibold text-gray-900">
-                    QA Results
+                    Technical Verification Results
                   </h2>
-                  {qaResults?.summary && (
-                    <p className="text-gray-700 mt-2 text-base">
-                      {qaResults.summary}
-                    </p>
-                  )}
+                  <p className="text-gray-700 mt-2 text-base">
+                    Automated technical requirements check completed.
+                  </p>
                 </div>
                 <div className="text-right">
                   <div
@@ -958,7 +913,7 @@ export default function WorktestQA() {
                             clipRule="evenodd"
                           />
                         </svg>
-                        Approved
+                        Technical Requirements Met
                       </>
                     ) : (
                       <>
@@ -973,7 +928,7 @@ export default function WorktestQA() {
                             clipRule="evenodd"
                           />
                         </svg>
-                        Needs Review
+                        Requirements Not Met
                       </>
                     )}
                   </div>
@@ -981,7 +936,7 @@ export default function WorktestQA() {
               </div>
             </div>
 
-            {/* Approval Message or Issues */}
+            {/* Technical Verification Message or Issues */}
             {qaResults?.status === "Approved" ? (
               <div className="p-6 bg-green-50 border-l-4 border-green-500">
                 <div className="flex items-center">
@@ -998,12 +953,33 @@ export default function WorktestQA() {
                   </svg>
                   <div>
                     <h3 className="text-lg font-semibold text-green-800">
-                      Congratulations! Your model has been approved.
+                      Technical Requirements Verified ✓
                     </h3>
                     <p className="text-green-700 mt-1">
-                      Your 3D model meets the required standards for the{" "}
-                      {selectedDifficulty} worktest. You can now generate your
-                      certificate of completion.
+                      You have successfully submitted a 3D model that meets our basic technical requirements for human review!
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 p-4 bg-white border border-green-200 rounded-lg">
+                  <h4 className="font-semibold text-green-800 mb-2">
+                    📧 Next Steps - Human Review Required
+                  </h4>
+                  <p className="text-green-700 text-sm">
+                    Please email this verification ID along with your .glb model file to{" "}
+                    <strong className="font-mono bg-green-100 px-2 py-1 rounded">
+                      recruitment@charpstar.com
+                    </strong>{" "}
+                    for full evaluation by our team.
+                  </p>
+                  <div className="mt-3 p-3 bg-green-100 border border-green-300 rounded">
+                    <p className="text-sm text-green-800">
+                      <strong>Verification ID:</strong>{" "}
+                      <span className="font-mono bg-white px-2 py-1 rounded border">
+                        {generateVerificationId()}
+                      </span>
+                    </p>
+                    <p className="text-xs text-green-600 mt-1">
+                      Include this ID in your email subject line
                     </p>
                   </div>
                 </div>
@@ -1012,13 +988,12 @@ export default function WorktestQA() {
               /* Issues Section for Non-Approved Models */
               <div className="p-6 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 text-red-600">
-                  Issues Found - Model Needs Improvement
+                  Technical Requirements Not Met
                 </h3>
                 <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
                   <p className="text-red-700">
-                    Your model did not meet the approval criteria. Please review
-                    the detailed feedback below and make the necessary
-                    adjustments before resubmitting.
+                    Your model did not meet the minimum technical requirements. Please review
+                    the feedback below and make the necessary adjustments before resubmitting.
                   </p>
                 </div>
 
@@ -1026,7 +1001,7 @@ export default function WorktestQA() {
                 {qaResults?.summary && (
                   <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
                     <h4 className="font-medium text-blue-800 mb-2">
-                      QA Analysis Summary
+                      Technical Analysis Summary
                     </h4>
                     <p className="text-blue-700">{qaResults.summary}</p>
                   </div>
@@ -1056,9 +1031,7 @@ export default function WorktestQA() {
               </div>
             )}
 
-            {/* Similarity Scores - REMOVED */}
-
-            {/* Image Comparison Section */}
+            {/* Visual Comparison Section */}
             <div className="p-6">
               <h2 className="text-lg font-semibold mb-4">Visual Comparison</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1239,43 +1212,45 @@ export default function WorktestQA() {
           {/* Action Buttons */}
           <div className="flex flex-col gap-4 mb-6">
             {qaResults?.status === "Approved" ? (
-              /* Certificate Generation for Approved Models */
-              <div className="bg-green-50 p-6 rounded-lg border border-green-200">
-                <h3 className="text-lg font-semibold text-green-800 mb-4">
-                  🎉 Generate Your Certificate
+              /* Next Steps for Approved Models */
+              <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                <h3 className="text-lg font-semibold text-blue-800 mb-4">
+                  📋 Application Instructions
                 </h3>
-                <p className="text-green-700 mb-4">
-                  Your model has been approved! Enter your name below to
-                  generate your certificate of completion.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <input
-                    type="text"
-                    placeholder="Enter your full name"
-                    value={candidateName}
-                    onChange={(e) => setCandidateName(e.target.value)}
-                    className="flex-1 px-4 py-3 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
-                  <button
-                    onClick={generateCertificate}
-                    disabled={!candidateName.trim()}
-                    className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Generate Certificate
-                  </button>
+                <div className="space-y-3">
+                  <p className="text-blue-700">
+                    <strong>1. Save your verification ID:</strong>{" "}
+                    <span className="font-mono bg-white px-2 py-1 rounded border">
+                      {generateVerificationId()}
+                    </span>
+                  </p>
+                  <p className="text-blue-700">
+                    <strong>2. Email your application to:</strong>{" "}
+                    <span className="font-mono bg-white px-2 py-1 rounded border">
+                      recruitment@charpstar.com
+                    </span>
+                  </p>
+                  <p className="text-blue-700">
+                    <strong>3. Include in your email:</strong>
+                  </p>
+                  <ul className="list-disc list-inside text-blue-700 ml-4 space-y-1">
+                    <li>Your verification ID in the subject line</li>
+                    <li>Your .glb model file as an attachment</li>
+                    <li>Brief introduction about yourself</li>
+                    <li>Why you're interested in working at Charpstar</li>
+                  </ul>
                 </div>
               </div>
             ) : (
               /* Improvement Message for Non-Approved Models */
               <div className="bg-red-50 p-6 rounded-lg border border-red-200">
                 <h3 className="text-lg font-semibold text-red-800 mb-2">
-                  Model Requires Improvements
+                  Technical Requirements Not Met
                 </h3>
                 <p className="text-red-700">
-                  Please review the issues listed above and make the necessary
+                  Please review the technical issues listed above and make the necessary
                   adjustments to your 3D model. Once you've addressed these
-                  concerns, you can upload your improved model for
-                  re-evaluation.
+                  concerns, you can upload your improved model for re-evaluation.
                 </p>
               </div>
             )}
@@ -1287,50 +1262,6 @@ export default function WorktestQA() {
               Test Another Model
             </button>
           </div>
-
-          {/* Certificate Modal */}
-          {showCertificateModal && certificateData && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                <div className="text-center">
-                  <div className="mb-4">
-                    <svg
-                      className="w-16 h-16 text-green-500 mx-auto"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    Certificate Ready!
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    Your certificate has been generated successfully. Click the
-                    button below to download it.
-                  </p>
-                  <div className="flex flex-col gap-3">
-                    <button
-                      onClick={downloadCertificate}
-                      className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
-                    >
-                      Download Certificate
-                    </button>
-                    <button
-                      onClick={() => setShowCertificateModal(false)}
-                      className="text-gray-500 hover:text-gray-700 transition-colors"
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Additional Info */}
           <div
@@ -1346,7 +1277,7 @@ export default function WorktestQA() {
               }`}
             >
               {qaResults?.status === "Approved"
-                ? "Congratulations!"
+                ? "Technical Verification Complete!"
                 : "Next Steps"}
             </h3>
             <p
@@ -1357,7 +1288,7 @@ export default function WorktestQA() {
               }`}
             >
               {qaResults?.status === "Approved"
-                ? `Excellent work! Your ${selectedDifficulty} level worktest model meets all requirements. Download your certificate to showcase your 3D modeling skills.`
+                ? `Great work! Your ${selectedDifficulty} level worktest model meets our technical requirements. Follow the instructions above to submit your application for human review by our team.`
                 : `Your model has been analyzed against the ${selectedDifficulty} worktest requirements. Review the feedback above to understand what needs improvement. You can test your updated model anytime.`}
             </p>
           </div>
