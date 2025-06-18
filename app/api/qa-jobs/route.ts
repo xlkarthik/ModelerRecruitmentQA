@@ -551,7 +551,7 @@ If modelStats.requirements is defined AND any of:
 - modelStats.doubleSidedCount > 0
 
 
-Don't compare the images if technical requirments are not met. 
+Don't compare the images if technical requirments are not met. Consider it not approved
 Then output exactly this JSON and stop:
 {
   "differences": [],
