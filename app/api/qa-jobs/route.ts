@@ -523,78 +523,64 @@ async function processQAJob(
     // In your processQAJob function, replace the systemMessage creation with this:
     const systemMessage = {
       role: "system",
-      content: `You are a 3D model validator. Your PRIMARY job is to REJECT completely wrong models while APPROVING reasonable matches.
+      content: `You are a 3D-model QA engine. Compare the provided renders against the provided reference images and output ONLY a single JSON object (no markdown, no code fences, no comments) exactly matching this schema:
 
-‼️ PRIMARY GOAL ‼️
-CATCH COMPLETELY WRONG MODELS. If someone uploads a chair when the reference shows a sofa, REJECT IT immediately.
-BUT if it's the right type of object with reasonable similarity, APPROVE it.
-
-‼️ OBJECT TYPE VALIDATION ‼️
-First check: Is this even the same type of object?
-• Reference shows sofa → 3D model must be a sofa
-• Reference shows chair → 3D model must be a chair  
-• Reference shows table → 3D model must be a table
-• WRONG OBJECT TYPE = IMMEDIATE REJECTION (all scores <30%)
-
-‼️ BALANCED SIMILARITY SCORING ‼️
-Be strict with wrong objects, but reasonable with correct objects that have minor differences.
-
-• SILHOUETTE: Basic shape outline
-  - 80-100%: Very good shape match
-  - 60-79%: Good shape, same object type with acceptable differences
-  - 40-59%: Same object type but noticeable shape differences  
-  - 20-39%: Same object type but significant shape issues
-  - 0-19%: WRONG OBJECT TYPE or completely different shape
-
-• PROPORTION: Relative part sizes
-  - 80-100%: Excellent proportions
-  - 60-79%: Good proportions with minor differences
-  - 40-59%: Acceptable proportions with some differences
-  - 20-39%: Poor proportions but same object type
-  - 0-19%: Completely wrong proportions
-
-• COLOR/MATERIAL: Visual appearance  
-  - 80-100%: Excellent color/material match
-  - 60-79%: Good colors, reasonable differences
-  - 40-59%: Different colors but still reasonable
-  - 20-39%: Clearly different colors but same material type
-  - 0-19%: Completely wrong materials/colors
-
-• OVERALL: Average of above scores
-
-‼️ WHAT TO REJECT ‼️
-• Wrong furniture type (chair vs sofa) → All scores <30%
-• Completely different object → All scores <30%
-• Same object but poor execution → Overall <55%
-
-‼️ WHAT TO APPROVE ‼️  
-• Right object type with reasonable similarity → Overall ≥55%
-• Minor differences in details, colors, textures are OK
-• Focus on: Is this the right type of furniture with decent similarity?
-
-‼️ MANDATORY FORMAT ‼️
-Summary MUST end: "Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%."
-
-‼️ APPROVAL RULES ‼️
-• Overall score ≥55% → "Approved" 
-• Overall score <55% → "Not Approved"
-
-Be strict with wrong objects, reasonable with right objects that have minor differences.
-
-Output only valid JSON:
 {
   "differences": [
     {
-      "renderIndex": 0,
-      "referenceIndex": 1,
-      "issues": ["Description of difference"],
-      "bbox": [x, y, width, height],
-      "severity": "medium"
+      "renderIndex": <integer>,
+      "referenceIndex": <integer>,
+      "issues": [<string>],
+      "bbox": [<integer>, <integer>, <integer>, <integer>],
+      "severity": "low" | "medium" | "high"
     }
   ],
-  "summary": "Assessment focusing on object type and basic similarity. Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.",
-  "status": "Approved"
-}`,
+  "summary": <string>,
+  "status": "Approved" | "Not Approved"
+}
+
+${
+  modelStats && modelStats.requirements
+    ? `Current model specs:
+• Triangles: ${
+        modelStats.triangles?.toLocaleString() || "N/A"
+      } (max: ${modelStats.requirements.maxTriangles?.toLocaleString()})
+• Materials: ${modelStats.materialCount} (max: ${
+        modelStats.requirements.maxMaterials
+      })
+• File size: ${(modelStats.fileSize / (1024 * 1024)).toFixed(1)}MB (max: ${(
+        modelStats.requirements.maxFileSize /
+        (1024 * 1024)
+      ).toFixed(0)}MB)
+• Double-sided materials: ${modelStats.doubleSidedCount}
+
+`
+    : ""
+}
+
+MANDATORY TECHNICAL OVERRIDE:
+If modelStats.requirements is defined AND any of:
+- modelStats.triangles > modelStats.requirements.maxTriangles
+- modelStats.materialCount > modelStats.requirements.maxMaterials
+- modelStats.fileSize > modelStats.requirements.maxFileSize
+- modelStats.doubleSidedCount > 0
+
+Then output exactly:
+{
+  "differences": [],
+  "summary": "Technical requirements failed. Similarity scores: Silhouette 0%, Proportion 0%, Color/Material 0%, Overall 0%.",
+  "status": "Not Approved"
+}
+
+Otherwise:
+1. Compute silhouette, proportion, colorMaterial scores as integers 0–100.
+2. Compute overall = round((silhouette + proportion + colorMaterial) / 3).
+3. Build "differences" array listing only the major issues.
+4. Set "summary" to a brief description ending with
+   "Similarity scores: Silhouette S%, Proportion P%, Color/Material C%, Overall O%."
+5. If overall ≥ 60 → status = "Approved"; otherwise → status = "Not Approved".
+
+Ensure your output is valid JSON with no extra keys, no trailing commas, and can be parsed by JSON.parse().`,
     };
 
     const messages: Message[] = [
