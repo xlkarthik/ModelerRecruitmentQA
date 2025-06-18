@@ -199,11 +199,6 @@ export default function WorktestQA() {
     document.head.appendChild(script);
   }, []);
 
-  // Cleanup polling interval and handle qaComplete state changes
-  useEffect(() => {
-    // This effect is now redundant - polling is handled in the main effect above
-  }, []);
-
   // Poll for job status - WITH TIMEOUT PROTECTION
   useEffect(() => {
     if (!currentJobId || qaComplete) return;
@@ -631,52 +626,156 @@ export default function WorktestQA() {
   return (
     <div className="max-w-4xl mx-auto p-6 bg-gray-50">
       {loadingQA ? (
-        <div className="flex flex-col items-center justify-center min-h-[70vh] text-center">
-          <div className="mb-8">
-            <svg
-              className="animate-spin h-16 w-16 text-gray-700"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
+        // IMPROVED Loading State - Same Structure as Main Interface
+        <div className="max-w-4xl mx-auto">
+          {/* Logo - Center Aligned */}
+          <div className="mb-8 flex justify-center">
+            <img
+              src="https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
+              alt="CharpstAR Logo"
+              className="h-10"
+            />
           </div>
-          <h2 className="text-xl font-semibold mb-4">
-            Analyzing your {selectedDifficulty} worktest model...
-          </h2>
-          <p className="text-gray-600 max-w-md mb-6">
-            This may take a minute. Our AI is comparing your model against the
-            worktest reference images.
-          </p>
-          <div className="bg-white p-5 rounded-lg shadow-sm max-w-md">
-            <h3 className="text-sm uppercase tracking-wider text-gray-500 mb-2">
-              Did you know?
-            </h3>
-            <p className="text-gray-800">{fact}</p>
+
+          <h1 className="text-2xl font-bold mb-6 text-center">
+            Analyzing Your{" "}
+            {selectedDifficulty.charAt(0).toUpperCase() +
+              selectedDifficulty.slice(1)}{" "}
+            Worktest Model
+          </h1>
+
+          {/* Progress Section */}
+          <div className="mb-8 bg-white p-6 rounded-lg shadow-sm">
+            <div className="flex items-center justify-center mb-4">
+              <svg
+                className="animate-spin h-12 w-12 text-blue-600"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            </div>
+            <h2 className="text-lg font-semibold text-center mb-4">
+              QA Analysis in Progress
+            </h2>
+            <p className="text-gray-600 text-center mb-4">
+              Our AI is comparing your model against the worktest reference
+              images. This may take a minute.
+            </p>
+
+            {currentJobId && (
+              <div className="text-center text-sm text-gray-500 mb-4">
+                Job ID: {currentJobId}
+              </div>
+            )}
           </div>
-          {currentJobId && (
-            <div className="mt-6 text-sm text-gray-500">
-              Job ID: {currentJobId}
+
+          {/* Current Worktest Info */}
+          <div className="mb-8 bg-white p-6 rounded-lg shadow-sm">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">
+              Current Worktest: {currentSpecs.title}
+            </h2>
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="text-sm text-blue-800 space-y-1">
+                <p>
+                  <strong>Max Triangles:</strong>{" "}
+                  {currentSpecs.maxTriangles.toLocaleString()}
+                </p>
+                <p>
+                  <strong>Max Materials:</strong> {currentSpecs.maxMaterials}
+                </p>
+                <p>
+                  <strong>Max File Size:</strong> {currentSpecs.maxFileSize}MB
+                </p>
+                <p>
+                  <strong>Dimensions:</strong> {currentSpecs.dimensions}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Your Model Screenshots */}
+          {screenshots.length > 0 && (
+            <div className="mb-8 bg-white p-6 rounded-lg shadow-sm">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                Your Model Screenshots (Being Analyzed)
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {screenshots.map((screenshot, index) => (
+                  <div
+                    key={index}
+                    className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative"
+                  >
+                    <img
+                      src={screenshot}
+                      alt={`Screenshot ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-blue-500 bg-opacity-20 flex items-center justify-center">
+                      <svg
+                        className="animate-pulse h-6 w-6 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
+
+          {/* Reference Images */}
+          <div className="mb-8 bg-white p-6 rounded-lg shadow-sm">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">
+              Reference Images ({selectedDifficulty} difficulty)
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {referenceImages.map((imageUrl, index) => (
+                <div
+                  key={index}
+                  className="aspect-square rounded-lg overflow-hidden bg-gray-100"
+                >
+                  <img
+                    src={imageUrl}
+                    alt={`Reference ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="text-sm text-gray-600 mt-2">
+              Your model is being compared against these official reference
+              images.
+            </p>
+          </div>
+
+          {/* Fun Fact Section */}
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">
+              🎯 Did you know?
+            </h3>
+            <p className="text-gray-700">{fact}</p>
+          </div>
         </div>
       ) : qaComplete && qaResults?.status === "Approved" ? (
         // Approved Model - Certificate Generation Only
         <div className="max-w-4xl mx-auto">
-          <div className="mb-8">
+          <div className="mb-8 flex justify-center">
             <img
               src="https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
               alt="CharpstAR Logo"
@@ -810,7 +909,7 @@ export default function WorktestQA() {
       ) : qaComplete ? (
         // Non-Approved Model - Full QA Results
         <div className="max-w-4xl mx-auto">
-          <div className="mb-8">
+          <div className="mb-8 flex justify-center">
             <img
               src="https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
               alt="CharpstAR Logo"
@@ -1139,7 +1238,7 @@ export default function WorktestQA() {
       ) : (
         // Main Form Interface
         <>
-          <div className="mb-8">
+          <div className="mb-8 flex justify-center">
             <img
               src="https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
               alt="CharpstAR Logo"
