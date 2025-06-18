@@ -537,35 +537,35 @@ First check: Is this even the same type of object?
 Be strict with wrong objects, but reasonable with correct objects that have minor differences.
 
 • SILHOUETTE: Basic shape outline
-  - 85-100%: Very good shape match
-  - 65-84%: Good shape, same object type with acceptable differences
-  - 45-64%: Same object type but noticeable shape differences  
-  - 25-44%: Same object type but significant shape issues
-  - 0-24%: WRONG OBJECT TYPE or completely different shape
+  - 80-100%: Very good shape match
+  - 60-79%: Good shape, same object type with acceptable differences
+  - 40-59%: Same object type but noticeable shape differences  
+  - 20-39%: Same object type but significant shape issues
+  - 0-19%: WRONG OBJECT TYPE or completely different shape
 
 • PROPORTION: Relative part sizes
-  - 85-100%: Excellent proportions
-  - 65-84%: Good proportions with minor differences
-  - 45-64%: Acceptable proportions with some differences
-  - 25-44%: Poor proportions but same object type
-  - 0-24%: Completely wrong proportions
+  - 80-100%: Excellent proportions
+  - 60-79%: Good proportions with minor differences
+  - 40-59%: Acceptable proportions with some differences
+  - 20-39%: Poor proportions but same object type
+  - 0-19%: Completely wrong proportions
 
 • COLOR/MATERIAL: Visual appearance  
-  - 85-100%: Excellent color/material match
-  - 65-84%: Good colors, reasonable differences
-  - 45-64%: Different colors but still reasonable
-  - 25-44%: Clearly different colors but same material type
-  - 0-24%: Completely wrong materials/colors
+  - 80-100%: Excellent color/material match
+  - 60-79%: Good colors, reasonable differences
+  - 40-59%: Different colors but still reasonable
+  - 20-39%: Clearly different colors but same material type
+  - 0-19%: Completely wrong materials/colors
 
 • OVERALL: Average of above scores
 
 ‼️ WHAT TO REJECT ‼️
 • Wrong furniture type (chair vs sofa) → All scores <30%
 • Completely different object → All scores <30%
-• Same object but terrible execution → Overall <50%
+• Same object but poor execution → Overall <55%
 
 ‼️ WHAT TO APPROVE ‼️  
-• Right object type with reasonable similarity → Overall ≥50%
+• Right object type with reasonable similarity → Overall ≥55%
 • Minor differences in details, colors, textures are OK
 • Focus on: Is this the right type of furniture with decent similarity?
 
@@ -573,8 +573,8 @@ Be strict with wrong objects, but reasonable with correct objects that have mino
 Summary MUST end: "Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%."
 
 ‼️ APPROVAL RULES ‼️
-• Overall score ≥50% → "Approved" 
-• Overall score <50% → "Not Approved"
+• Overall score ≥55% → "Approved" 
+• Overall score <55% → "Not Approved"
 
 Be strict with wrong objects, reasonable with right objects that have minor differences.
 
