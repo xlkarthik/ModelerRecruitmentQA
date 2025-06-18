@@ -1503,7 +1503,381 @@ export default function WorktestQA() {
                 : `Your model has been analyzed against the ${selectedDifficulty} worktest requirements. Review the feedback above to understand what needs improvement. You can test your updated model anytime.`}
             </p>
           </div>
-          )
+          </div>
+        ) : (
+          // Non-Approved Model - Full QA Results
+          <div className="max-w-4xl mx-auto">
+            <div className="mb-8">
+              <img
+                src="https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
+                alt="CharpstAR Logo"
+                className="h-10"
+              />
+            </div>
+
+            <h1 className="text-2xl font-bold mb-6">
+              QA Results - {currentSpecs.title}
+            </h1>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden">
+              {/* QA Status Header */}
+              <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      QA Results
+                    </h2>
+                    {qaResults?.summary && (
+                      <p className="text-gray-700 mt-2 text-base">
+                        {qaResults.summary}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div
+                      className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
+                        qaResults?.status === "Approved"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {qaResults?.status === "Approved" ? (
+                        <>
+                          <svg
+                            className="w-4 h-4 mr-2"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          Approved
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            className="w-4 h-4 mr-2"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          Needs Review
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Issues Section for Non-Approved Models */}
+              <div className="p-6 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 text-red-600">
+                  Issues Found - Model Needs Improvement
+                </h3>
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+                  <p className="text-red-700">
+                    Your model did not meet the approval criteria. Please review
+                    the detailed feedback below and make the necessary
+                    adjustments before resubmitting.
+                  </p>
+                </div>
+
+                {/* QA Summary */}
+                {qaResults?.summary && (
+                  <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                    <h4 className="font-medium text-blue-800 mb-2">
+                      QA Analysis Summary
+                    </h4>
+                    <p className="text-blue-700">{qaResults.summary}</p>
+                  </div>
+                )}
+
+                {qaResults?.differences && qaResults.differences.length > 0 && (
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-gray-800">
+                      Issues to Address:
+                    </h4>
+                    <div className="space-y-2">
+                      {qaResults.differences.map((diff, index) => (
+                        <div key={index}>
+                          {diff.issues.map((issue, issueIndex) => (
+                            <div
+                              key={issueIndex}
+                              className="p-3 bg-gray-50 border-l-4 border-gray-400 rounded"
+                            >
+                              <p className="text-sm text-gray-700">• {issue}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Visual Comparison Section */}
+              <div className="p-6">
+                <h2 className="text-lg font-semibold mb-4">Visual Comparison</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Model Screenshots */}
+                  <div>
+                    <h3 className="font-medium mb-3 text-gray-700">Your Model</h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      {screenshots.map((screenshot, index) => (
+                        <div
+                          key={index}
+                          className="aspect-square rounded-lg overflow-hidden bg-gray-100"
+                        >
+                          <img
+                            src={screenshot}
+                            alt={`Your model ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Reference Images */}
+                  <div>
+                    <h3 className="font-medium mb-3 text-gray-700">
+                      Reference Images
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      {referenceImages.slice(0, 4).map((refImage, index) => (
+                        <div
+                          key={index}
+                          className="aspect-square rounded-lg overflow-hidden bg-gray-100"
+                        >
+                          <img
+                            src={refImage}
+                            alt={`Reference ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <hr className="border-t border-gray-200" />
+
+              {/* Technical Analysis Section */}
+              <div className="p-6">
+                <h2 className="text-lg font-semibold mb-4">Technical Analysis</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Worktest Requirements */}
+                  <div>
+                    <h3 className="font-medium mb-3 text-gray-700">
+                      Worktest Requirements
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Max Triangles</span>
+                        <span className="text-sm font-mono">
+                          {currentSpecs.maxTriangles.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Max Materials</span>
+                        <span className="text-sm font-mono">
+                          {currentSpecs.maxMaterials}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Max File Size</span>
+                        <span className="text-sm font-mono">
+                          {currentSpecs.maxFileSize}MB
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Model Statistics */}
+                  <div>
+                    <h3 className="font-medium mb-3 text-gray-700">
+                      Your Model Stats
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center">
+                        {modelStats?.triangles &&
+                        modelStats.triangles <= currentSpecs.maxTriangles ? (
+                          <span className="inline-flex items-center justify-center w-5 h-5 mr-3 bg-green-100 text-green-800 rounded-full text-xs">
+                            ✓
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center justify-center w-5 h-5 mr-3 bg-red-100 text-red-800 rounded-full text-xs">
+                            ✗
+                          </span>
+                        )}
+                        <span className="text-sm">
+                          Triangles:{" "}
+                          {modelStats?.triangles?.toLocaleString() || "N/A"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center">
+                        {modelStats?.materialCount &&
+                        modelStats.materialCount <= currentSpecs.maxMaterials ? (
+                          <span className="inline-flex items-center justify-center w-5 h-5 mr-3 bg-green-100 text-green-800 rounded-full text-xs">
+                            ✓
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center justify-center w-5 h-5 mr-3 bg-red-100 text-red-800 rounded-full text-xs">
+                            ✗
+                          </span>
+                        )}
+                        <span className="text-sm">
+                          Materials: {modelStats?.materialCount || "N/A"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center">
+                        {glbFile &&
+                        glbFile.size / (1024 * 1024) <=
+                          currentSpecs.maxFileSize ? (
+                          <span className="inline-flex items-center justify-center w-5 h-5 mr-3 bg-green-100 text-green-800 rounded-full text-xs">
+                            ✓
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center justify-center w-5 h-5 mr-3 bg-red-100 text-red-800 rounded-full text-xs">
+                            ✗
+                          </span>
+                        )}
+                        <span className="text-sm">
+                          File Size:{" "}
+                          {glbFile
+                            ? `${(glbFile.size / (1024 * 1024)).toFixed(2)}MB`
+                            : "N/A"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center">
+                        {modelStats?.doubleSidedCount === 0 ? (
+                          <span className="inline-flex items-center justify-center w-5 h-5 mr-3 bg-green-100 text-green-800 rounded-full text-xs">
+                            ✓
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center justify-center w-5 h-5 mr-3 bg-red-100 text-red-800 rounded-full text-xs">
+                            ✗
+                          </span>
+                        )}
+                        <span className="text-sm">
+                          Double-sided Materials:{" "}
+                          {modelStats?.doubleSidedCount || "0"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center">
+                        <span className="inline-flex items-center justify-center w-5 h-5 mr-3 bg-gray-100 text-gray-800 rounded-full text-xs">
+                          i
+                        </span>
+                        <span className="text-sm">
+                          Mesh Count: {modelStats?.meshCount || "N/A"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center">
+                        <span className="inline-flex items-center justify-center w-5 h-5 mr-3 bg-gray-100 text-gray-800 rounded-full text-xs">
+                          i
+                        </span>
+                        <span className="text-sm">
+                          Vertices:{" "}
+                          {modelStats?.vertices?.toLocaleString() || "N/A"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-4 mb-6">
+              {/* Improvement Message for Non-Approved Models */}
+              <div className="bg-red-50 p-6 rounded-lg border border-red-200">
+                <h3 className="text-lg font-semibold text-red-800 mb-2">
+                  Model Requires Improvements
+                </h3>
+                <p className="text-red-700">
+                  Please review the issues listed above and make the necessary
+                  adjustments to your 3D model. Once you've addressed these
+                  concerns, you can upload your improved model for
+                  re-evaluation.
+                </p>
+              </div>
+
+              <button
+                onClick={resetAll}
+                className="w-full border border-gray-300 text-gray-800 rounded-lg py-4 font-medium hover:bg-gray-50 transition-colors"
+              >
+                Test Another Model
+              </button>
+            </div>
+
+            {/* Certificate Modal */}
+            {showCertificateModal && certificateData && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg p-6 max-w-md w-full">
+                  <div className="text-center">
+                    <div className="mb-4">
+                      <svg
+                        className="w-16 h-16 text-green-500 mx-auto"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      Certificate Ready!
+                    </h3>
+                    <p className="text-gray-600 mb-6">
+                      Your certificate has been generated successfully. Click the
+                      button below to download it.
+                    </p>
+                    <div className="flex flex-col gap-3">
+                      <button
+                        onClick={downloadCertificate}
+                        className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
+                      >
+                        Download Certificate
+                      </button>
+                      <button
+                        onClick={() => setShowCertificateModal(false)}
+                        className="text-gray-500 hover:text-gray-700 transition-colors"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Additional Info */}
+            <div className="mt-6 p-4 rounded-lg bg-blue-50">
+              <h3 className="font-semibold mb-2 text-blue-900">
+                Next Steps
+              </h3>
+              <p className="text-sm text-blue-800">
+                Your model has been analyzed against the {selectedDifficulty} worktest requirements. Review the feedback above to understand what needs improvement. You can test your updated model anytime.
+              </p>
+            </div>
+          </div>
         )
       )}
     </div>
