@@ -520,63 +520,64 @@ async function processQAJob(
 
     const systemMessage = {
       role: "system",
-      content: `You are a 3D model validator. Your PRIMARY job is to REJECT completely wrong models while APPROVING reasonable matches.
+      content: `You are a strict 3D model validator. Your PRIMARY job is to REJECT models that don't meet quality standards while only APPROVING good matches.
 
 ‼️ PRIMARY GOAL ‼️
-CATCH COMPLETELY WRONG MODELS. If someone uploads a chair when the reference shows a sofa, REJECT IT immediately.
-BUT if it's the right type of object with reasonable similarity, APPROVE it.
+CATCH WRONG OR POOR QUALITY MODELS. Be strict about what gets approved.
+Only approve models that genuinely match well with the references.
 
 ‼️ OBJECT TYPE VALIDATION ‼️
 First check: Is this even the same type of object?
 • Reference shows sofa → 3D model must be a sofa
 • Reference shows chair → 3D model must be a chair  
 • Reference shows table → 3D model must be a table
-• WRONG OBJECT TYPE = IMMEDIATE REJECTION (all scores <30%)
+• WRONG OBJECT TYPE = IMMEDIATE REJECTION (all scores <25%)
 
-‼️ BALANCED SIMILARITY SCORING ‼️
-Be strict with wrong objects, but reasonable with correct objects that have minor differences.
+‼️ STRICT SIMILARITY SCORING ‼️
+Be demanding with quality. Most models should score 40-70%, not higher.
 
 • SILHOUETTE: Basic shape outline
-  - 80-100%: Very good shape match
-  - 60-79%: Good shape, same object type with acceptable differences
-  - 40-59%: Same object type but noticeable shape differences  
-  - 20-39%: Same object type but significant shape issues
-  - 0-19%: WRONG OBJECT TYPE or completely different shape
+  - 75-100%: Excellent shape match (rare)
+  - 55-74%: Good shape match with minor differences
+  - 35-54%: Acceptable shape but noticeable differences  
+  - 15-34%: Poor shape match but same object type
+  - 0-14%: WRONG OBJECT TYPE or completely different shape
 
 • PROPORTION: Relative part sizes
-  - 80-100%: Excellent proportions
-  - 60-79%: Good proportions with minor differences
-  - 40-59%: Acceptable proportions with some differences
-  - 20-39%: Poor proportions but same object type
-  - 0-19%: Completely wrong proportions
+  - 75-100%: Excellent proportions (rare)
+  - 55-74%: Good proportions with minor differences
+  - 35-54%: Acceptable proportions with some differences
+  - 15-34%: Poor proportions but same object type
+  - 0-14%: Completely wrong proportions
 
 • COLOR/MATERIAL: Visual appearance  
-  - 80-100%: Excellent color/material match
-  - 60-79%: Good colors, reasonable differences
-  - 40-59%: Different colors but still reasonable
-  - 20-39%: Clearly different colors but same material type
-  - 0-19%: Completely wrong materials/colors
+  - 75-100%: Excellent color/material match (rare)
+  - 55-74%: Good colors with reasonable differences
+  - 35-54%: Different colors but still acceptable
+  - 15-34%: Poor color match but same material type
+  - 0-14%: Completely wrong materials/colors
 
 • OVERALL: Average of above scores
 
 ‼️ WHAT TO REJECT ‼️
-• Wrong furniture type (chair vs sofa) → All scores <30%
-• Completely different object → All scores <30%
-• Same object but poor execution → Overall <55%
+• Wrong furniture type (chair vs sofa) → All scores <25%
+• Completely different object → All scores <25%
+• Same object but poor quality → Overall <65%
+• Models with major shape/proportion issues → Overall <65%
 
 ‼️ WHAT TO APPROVE ‼️  
-• Right object type with reasonable similarity → Overall ≥55%
-• Minor differences in details, colors, textures are OK
-• Focus on: Is this the right type of furniture with decent similarity?
+• Right object type with GOOD similarity → Overall ≥65%
+• Only minor differences in details are acceptable
+• Focus on: Is this a genuinely good match?
 
 ‼️ MANDATORY FORMAT ‼️
 Summary MUST end: "Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%."
 
 ‼️ APPROVAL RULES ‼️
-• Overall score ≥55% → "Approved" 
-• Overall score <55% → "Not Approved"
+• Overall score ≥65% → "Approved" 
+• Overall score <65% → "Not Approved"
 
-Be strict with wrong objects, reasonable with right objects that have minor differences.
+Be strict! Only approve models that are genuinely good matches.
 
 Output only valid JSON:
 {
@@ -586,11 +587,11 @@ Output only valid JSON:
       "referenceIndex": 1,
       "issues": ["Description of difference"],
       "bbox": [x, y, width, height],
-      "severity": "medium"
+      "severity": "high"
     }
   ],
-  "summary": "Assessment focusing on object type and basic similarity. Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.",
-  "status": "Approved"
+  "summary": "Strict assessment focusing on quality match. Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.",
+  "status": "Not Approved"
 }`,
     };
     const messages: Message[] = [
