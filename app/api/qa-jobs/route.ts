@@ -523,46 +523,57 @@ async function processQAJob(
     // In your processQAJob function, replace the systemMessage creation with this:
 
     const systemMessage = {
-  role: "system",
-  content: `You are a 3D-model QA engine. Compare the provided renders against the provided reference images and output ONLY a single valid JSON object with these keys:
+      role: "system",
+      content: `You are a 3D-model QA engine. Compare the provided renders against the provided reference images and output **only** a single JSON object with these keys:
 
-1. "differences": an array of objects each containing:
-   - renderIndex (int)
-   - referenceIndex (int)
-   - issues (array of brief strings)
-   - bbox (array [x, y, width, height])
-   - severity ("low"|"medium"|"high")
+1. "differences": an array of
+   - renderIndex (int),
+   - referenceIndex (int),
+   - issues (array of brief strings),
+   - bbox (array [x,y,width,height]),
+   - severity ("low" | "medium" | "high").
 2. "summary": a concise English description of overall findings.
-   - MUST end with "Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%."
-3. "status": either "Approved" or "Not Approved"
+   - Must end with "Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%."
+3. "status": either "Approved" or "Not Approved".
 
-${modelStats && modelStats.requirements ? `Current model specs:
-• Triangles: ${modelStats.triangles?.toLocaleString() || "N/A"} (max: ${modelStats.requirements.maxTriangles?.toLocaleString()})
-• Materials: ${modelStats.materialCount} (max: ${modelStats.requirements.maxMaterials})
-• File size: ${(modelStats.fileSize / (1024 * 1024)).toFixed(1)}MB (max: ${(modelStats.requirements.maxFileSize / (1024 * 1024)).toFixed(0)}MB)
-• Double-sided materials count: ${modelStats.doubleSidedCount}
+${
+  modelStats && modelStats.requirements
+    ? `Current model specs:
+• Triangles: ${
+        modelStats.triangles?.toLocaleString() || "N/A"
+      } (max: ${modelStats.requirements.maxTriangles?.toLocaleString()})
+• Materials: ${modelStats.materialCount} (max: ${
+        modelStats.requirements.maxMaterials
+      })
+• File size: ${(modelStats.fileSize / (1024 * 1024)).toFixed(1)}MB (max: ${(
+        modelStats.requirements.maxFileSize /
+        (1024 * 1024)
+      ).toFixed(0)}MB)
+• Double-sided: ${modelStats.doubleSidedCount}
+`
+    : ""
+}
 
-` : ``}
-
-‼️ MANDATORY OVERRIDE RULES ‼️  
-If modelStats.requirements is defined **and** **any** of the following is true, you **must** set `"status": "Not Approved"` **and stop**—do not compute or emit any similarity scores:  
-• modelStats.triangles > modelStats.requirements.maxTriangles  
-• modelStats.materialCount > modelStats.requirements.maxMaterials  
-• modelStats.fileSize > modelStats.requirements.maxFileSize  
-• modelStats.doubleSidedCount > 0  
+‼️ MANDATORY OVERRIDE RULE ‼️  
+• If any technical requirement fails → status **must** be "Not Approved" (ignore similarity scores).
 
 ‼️ SCORING & APPROVAL RULES ‼️  
-1. Compute only if **all** mandatory overrides pass.  
-2. Silhouette: 0–100% (shape match)  
-3. Proportion: 0–100% (part sizes)  
-4. Color/Material: 0–100% (appearance)  
-5. Overall: average of the three  
-6. If overall ≥ 60%, `"status": "Approved"`; otherwise `"status": "Not Approved"`
+1. Check Technical Requirements first:  
+   • Triangles ≤ maxTriangles  
+   • Materials ≤ maxMaterials  
+   • File size ≤ maxFileSize  
+   • Double-sided count = 0  
+2. If any of the above fails → status = "Not Approved", stop here.  
+3. Otherwise compute:  
+   • Silhouette: 0–100% (shape match)  
+   • Proportion: 0–100% (part sizes)  
+   • Color/Material: 0–100% (appearance)  
+   • Overall: average of the three.  
+4. If overall ≥ 60% → status = "Approved"; else → status = "Not Approved".
 
 ‼️ FORMAT ‼️  
-Output **only** the JSON. No markdown, no code fences, no extra keys or comments.`,
-};
-
+Output **only** valid JSON. No extra keys, no markdown, no comments.`,
+    };
 
     const messages: Message[] = [
       {
