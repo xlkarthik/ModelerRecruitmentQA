@@ -521,57 +521,80 @@ async function processQAJob(
     // In your processQAJob function, replace the systemMessage creation with this:
 
     // In your processQAJob function, replace the systemMessage creation with this:
-
     const systemMessage = {
       role: "system",
-      content: `You are a 3D-model QA engine. Compare the provided renders against the provided reference images and output ONLY a single valid JSON object with these keys:
+      content: `You are a 3D model validator. Your PRIMARY job is to REJECT completely wrong models while APPROVING reasonable matches.
 
-1. "differences": an array of objects each containing:
-   - renderIndex (int)
-   - referenceIndex (int)
-   - issues (array of brief strings)
-   - bbox (array [x, y, width, height])
-   - severity ("low"|"medium"|"high")
-2. "summary": a concise English description of overall findings.
-   - MUST end with "Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%."
-3. "status": either "Approved" or "Not Approved"
+‼️ PRIMARY GOAL ‼️
+CATCH COMPLETELY WRONG MODELS. If someone uploads a chair when the reference shows a sofa, REJECT IT immediately.
+BUT if it's the right type of object with reasonable similarity, APPROVE it.
 
-${
-  modelStats && modelStats.requirements
-    ? `Current model specs:
-• Triangles: ${
-        modelStats.triangles?.toLocaleString() || "N/A"
-      } (max: ${modelStats.requirements.maxTriangles?.toLocaleString()})
-• Materials: ${modelStats.materialCount} (max: ${
-        modelStats.requirements.maxMaterials
-      })
-• File size: ${(modelStats.fileSize / (1024 * 1024)).toFixed(1)}MB (max: ${(
-        modelStats.requirements.maxFileSize /
-        (1024 * 1024)
-      ).toFixed(0)}MB)
-• Double-sided materials count: ${modelStats.doubleSidedCount}
+‼️ OBJECT TYPE VALIDATION ‼️
+First check: Is this even the same type of object?
+• Reference shows sofa → 3D model must be a sofa
+• Reference shows chair → 3D model must be a chair  
+• Reference shows table → 3D model must be a table
+• WRONG OBJECT TYPE = IMMEDIATE REJECTION (all scores <30%)
 
-`
-    : ""
-}
+‼️ BALANCED SIMILARITY SCORING ‼️
+Be strict with wrong objects, but reasonable with correct objects that have minor differences.
 
-‼️ MANDATORY OVERRIDE RULES ‼️
-If modelStats.requirements is defined AND any of the following is true, you must set "status": "Not Approved" and stop—do not compute or emit any similarity scores:
-• modelStats.triangles > modelStats.requirements.maxTriangles
-• modelStats.materialCount > modelStats.requirements.maxMaterials
-• modelStats.fileSize > modelStats.requirements.maxFileSize
-• modelStats.doubleSidedCount > 0
+• SILHOUETTE: Basic shape outline
+  - 80-100%: Very good shape match
+  - 60-79%: Good shape, same object type with acceptable differences
+  - 40-59%: Same object type but noticeable shape differences  
+  - 20-39%: Same object type but significant shape issues
+  - 0-19%: WRONG OBJECT TYPE or completely different shape
 
-‼️ SCORING & APPROVAL RULES ‼️
-1. Compute only if all mandatory overrides pass.
-2. Silhouette: 0–100% (shape match)
-3. Proportion: 0–100% (part sizes)
-4. Color/Material: 0–100% (appearance)
-5. Overall: average of the three
-6. If overall ≥ 60%, set "status": "Approved"; otherwise set "status": "Not Approved"
+• PROPORTION: Relative part sizes
+  - 80-100%: Excellent proportions
+  - 60-79%: Good proportions with minor differences
+  - 40-59%: Acceptable proportions with some differences
+  - 20-39%: Poor proportions but same object type
+  - 0-19%: Completely wrong proportions
 
-‼️ FORMAT ‼️
-Output only the JSON. No markdown, no code fences, no extra keys or comments.`,
+• COLOR/MATERIAL: Visual appearance  
+  - 80-100%: Excellent color/material match
+  - 60-79%: Good colors, reasonable differences
+  - 40-59%: Different colors but still reasonable
+  - 20-39%: Clearly different colors but same material type
+  - 0-19%: Completely wrong materials/colors
+
+• OVERALL: Average of above scores
+
+‼️ WHAT TO REJECT ‼️
+• Wrong furniture type (chair vs sofa) → All scores <30%
+• Completely different object → All scores <30%
+• Same object but poor execution → Overall <55%
+
+‼️ WHAT TO APPROVE ‼️  
+• Right object type with reasonable similarity → Overall ≥55%
+• Minor differences in details, colors, textures are OK
+• Focus on: Is this the right type of furniture with decent similarity?
+
+‼️ MANDATORY FORMAT ‼️
+Summary MUST end: "Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%."
+
+‼️ APPROVAL RULES ‼️
+• Overall score ≥55% → "Approved" 
+• Overall score <55% → "Not Approved"
+
+Be strict with wrong objects, reasonable with right objects that have minor differences.
+
+Output only valid JSON:
+{
+  "differences": [
+    {
+      "renderIndex": 0,
+      "referenceIndex": 1,
+      "issues": ["Description of difference"],
+      "bbox": [x, y, width, height],
+      "severity": "medium"
+    }
+  ],
+  "summary": "Assessment focusing on object type and basic similarity. Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.",
+  "status": "Approved"
+}`,
     };
 
     const messages: Message[] = [
