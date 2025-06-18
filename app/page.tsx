@@ -123,6 +123,9 @@ export default function WorktestQA() {
   const [candidateName, setCandidateName] = useState<string>("");
   const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [certificateData, setCertificateData] = useState<any>(null);
+  const [certificateGenerated, setCertificateGenerated] = useState(false);
+  const [certificateFileName, setCertificateFileName] = useState<string>("");
+  const [certificateBlob, setCertificateBlob] = useState<Blob | null>(null);
   const [modelStats, setModelStats] = useState<{
     meshCount: number;
     materialCount: number;
@@ -384,33 +387,38 @@ export default function WorktestQA() {
         throw new Error(error.error || "Failed to generate certificate");
       }
 
-      // Download the PDF directly
+      // Store the blob for download later
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `CharpstAR_Certificate_${candidateName.replace(
+      const fileName = `CharpstAR_Certificate_${candidateName.replace(
         /\s+/g,
         "_"
       )}_${selectedDifficulty}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      
+      setCertificateBlob(blob);
+      setCertificateFileName(fileName);
+      setCertificateGenerated(true);
     } catch (err: any) {
       setError(err.message);
     }
   };
 
   const downloadCertificate = () => {
-    // This function is no longer needed since we download directly
-    // but keeping it for compatibility
+    if (certificateBlob && certificateFileName) {
+      const url = window.URL.createObjectURL(certificateBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = certificateFileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }
   };
 
   const generateVerificationId = () => {
     // Generate a simple verification ID based on job ID and timestamp
     const timestamp = Date.now().toString(36);
-    const jobIdShort = currentJobId?.slice(-8) || "unknown";
+    const jobIdShort = currentJobId?.slice(-8) || 'unknown';
     return `CHR-${selectedDifficulty.toUpperCase()}-${jobIdShort}-${timestamp}`;
   };
 
@@ -427,6 +435,9 @@ export default function WorktestQA() {
     setCandidateName("");
     setShowCertificateModal(false);
     setCertificateData(null);
+    setCertificateGenerated(false);
+    setCertificateFileName("");
+    setCertificateBlob(null);
 
     if (loadTimeoutRef.current) {
       clearTimeout(loadTimeoutRef.current);
@@ -916,7 +927,135 @@ export default function WorktestQA() {
           )}
         </>
       ) : (
-        // QA Results Screen
+        // QA Results Screen - ONLY FOR NON-APPROVED MODELS
+        qaResults?.status === "Approved" ? (
+          // Approved Model - Certificate Generation Only
+          <div className="max-w-4xl mx-auto">
+            <div className="mb-8">
+              <img
+                src="https://charpstar.se/Synsam/NewIntegrationtest/Charpstar-Logo.png"
+                alt="CharpstAR Logo"
+                className="h-10"
+              />
+            </div>
+
+            <h1 className="text-2xl font-bold mb-6">
+              Technical Requirements Verified - {currentSpecs.title}
+            </h1>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden">
+              {/* Success Message */}
+              <div className="p-6 bg-green-50 border-l-4 border-green-500">
+                <div className="flex items-center">
+                  <svg
+                    className="w-6 h-6 text-green-500 mr-3"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <div>
+                    <h3 className="text-lg font-semibold text-green-800">
+                      Congratulations! Technical requirements verified.
+                    </h3>
+                    <p className="text-green-700 mt-1">
+                      You have successfully submitted a 3D model that meets our basic technical requirements for human review! Next Steps: Please email this verification along with your .glb model to recruitment@charpstar.com for full evaluation by our team.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Certificate Generation Section */}
+            <div className="flex flex-col gap-4 mb-6">
+              {!certificateGenerated ? (
+                <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+                  <h3 className="text-lg font-semibold text-green-800 mb-4">
+                    🎉 Generate Your Certificate
+                  </h3>
+                  <p className="text-green-700 mb-4">
+                    Your model meets our technical requirements! Enter your name below to
+                    generate your certificate, then email it along with your .glb model to recruitment@charpstar.com for full evaluation by our team.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <input
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={candidateName}
+                      onChange={(e) => setCandidateName(e.target.value)}
+                      className="flex-1 px-4 py-3 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                    <button
+                      onClick={generateCertificate}
+                      disabled={!candidateName.trim()}
+                      className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Generate Certificate
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+                  <div className="flex items-center mb-4">
+                    <svg
+                      className="w-8 h-8 text-green-500 mr-3"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <h3 className="text-lg font-semibold text-green-800">
+                      Certificate Generated Successfully!
+                    </h3>
+                  </div>
+                  <p className="text-green-700 mb-4">
+                    Your certificate has been generated for <strong>{candidateName}</strong>. 
+                    Download it and email it along with your .glb model to recruitment@charpstar.com.
+                  </p>
+                  <button
+                    onClick={downloadCertificate}
+                    className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors mr-4"
+                  >
+                    📄 Download PDF Certificate
+                  </button>
+                  <button
+                    onClick={() => setCertificateGenerated(false)}
+                    className="text-green-600 hover:text-green-700 px-4 py-3 font-medium transition-colors"
+                  >
+                    Generate for Different Name
+                  </button>
+                </div>
+              )}
+
+              <button
+                onClick={resetAll}
+                className="w-full border border-gray-300 text-gray-800 rounded-lg py-4 font-medium hover:bg-gray-50 transition-colors"
+              >
+                Test Another Model
+              </button>
+            </div>
+
+            {/* Instructions */}
+            <div className="mt-6 p-4 rounded-lg bg-green-50">
+              <h3 className="font-semibold mb-2 text-green-900">
+                Next Steps - Human Review Required
+              </h3>
+              <p className="text-sm text-green-800">
+                Excellent work! Your {selectedDifficulty} level worktest model meets our technical requirements. 
+                Download your certificate and email it along with your .glb model to recruitment@charpstar.com for full evaluation by our team.
+              </p>
+            </div>
+          </div>
+        ) : (
+          // Non-Approved Model - Full QA Results
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
             <img
@@ -1008,11 +1147,7 @@ export default function WorktestQA() {
                       Congratulations! Technical requirements verified.
                     </h3>
                     <p className="text-green-700 mt-1">
-                      You have successfully submitted a 3D model that meets our
-                      basic technical requirements for human review! Next Steps:
-                      Please email this verification along with your .glb model
-                      to recruitment@charpstar.com for full evaluation by our
-                      team.
+                      You have successfully submitted a 3D model that meets our basic technical requirements for human review! Next Steps: Please email this verification along with your .glb model to recruitment@charpstar.com for full evaluation by our team.
                     </p>
                   </div>
                 </div>
@@ -1252,10 +1387,8 @@ export default function WorktestQA() {
                   🎉 Generate Your Certificate
                 </h3>
                 <p className="text-green-700 mb-4">
-                  Your model meets our technical requirements! Enter your name
-                  below to generate your certificate, then email it along with
-                  your .glb model to recruitment@charpstar.com for full
-                  evaluation by our team.
+                  Your model meets our technical requirements! Enter your name below to
+                  generate your certificate, then email it along with your .glb model to recruitment@charpstar.com for full evaluation by our team.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <input
@@ -1370,7 +1503,8 @@ export default function WorktestQA() {
                 : `Your model has been analyzed against the ${selectedDifficulty} worktest requirements. Review the feedback above to understand what needs improvement. You can test your updated model anytime.`}
             </p>
           </div>
-        </div>
+          )
+        )
       )}
     </div>
   );
