@@ -577,7 +577,7 @@ SCORING & APPROVAL:
 1. Compute silhouette, proportion, colorMaterial as integers 0–100.
 2. overall = round((silhouette + proportion + colorMaterial) / 3).
 3. If overall ≥ 60 → status = "Approved"; else → status = "Not Approved".
-!!!IMPORTANT : Even if the overall score is !!!
+!!!IMPORTANT : Even if the overall score is greater than 60, if technical re!!!
 Do not output anything else—no markdown, no code fences, no extra keys, no comments.`,
     };
 
