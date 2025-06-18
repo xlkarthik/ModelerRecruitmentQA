@@ -821,7 +821,7 @@ export default function WorktestQA() {
             {!certificateGenerated ? (
               <div className="bg-green-50 p-6 rounded-lg border border-green-200">
                 <h3 className="text-lg font-semibold text-green-800 mb-4">
-                  📜 Generate Your Verification Certificate
+                  Generate Your Verification Certificate
                 </h3>
                 <p className="text-green-700 mb-4">
                   Get your official verification document to include with your
