@@ -155,20 +155,7 @@ export default function WorktestQA() {
   const viewerRef = useRef<ModelViewerElement | null>(null);
   const loadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const facts = [
-    "Charpstar is an Augmented Reality Company founded in 2016, focused on transforming e-commerce through Web AR.",
-    "3D models in e-commerce can increase conversion rates by up to 40% compared to traditional 2D images.",
-    "Charpstar works with some of the biggest retail clients in Europe, driving new shopping behaviors through AR.",
-    "The first 3D computer graphics were created in the 1960s, but realistic 3D rendering took decades to develop.",
-    "3D file formats like glTF are optimized for web delivery, making AR experiences faster and more accessible.",
-    "Charpstar is led by two co-founders with different backgrounds who strive to build market share daily.",
-    "3D scanning technologies can now capture real-world objects with sub-millimeter accuracy.",
-    "WebGL and WebXR technologies have made 3D experiences possible directly in web browsers without plugins.",
-    "Real-time 3D rendering was once only possible on specialized hardware but now works on most smartphones.",
-    "Charpstar creates a creative playground for like-minded people to achieve success in the emerging AR field.",
-    "The global AR market is projected to reach $340 billion by 2028, with retail as one of the fastest-growing segments.",
-    "Modern 3D modeling software can simulate realistic physics, materials, and lighting for photorealistic results.",
-  ];
+
 
   // Load model-viewer script
   useEffect(() => {
