@@ -191,7 +191,7 @@ export default function WorktestQA() {
       setError("Could not load 3D viewer.");
     };
     document.head.appendChild(script);
-  }, []);
+  }, [loadingQA]);
 
   // Cleanup polling interval and handle qaComplete state changes
   useEffect(() => {
