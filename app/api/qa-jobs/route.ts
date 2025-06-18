@@ -581,9 +581,8 @@ SCORING & APPROVAL:
 Do not output anything else—no markdown, no code fences, no extra keys, no comments.`,
     };
 
+    console.log(systemMessage.content);
 
-    console.log(s);
-    
     const messages: Message[] = [
       {
         role: "system",
