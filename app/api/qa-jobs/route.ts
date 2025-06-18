@@ -637,12 +637,7 @@ export default function WorktestQA() {
             />
           </div>
 
-          <h1 className="text-2xl font-bold mb-6 text-center">
-            Analyzing Your{" "}
-            {selectedDifficulty.charAt(0).toUpperCase() +
-              selectedDifficulty.slice(1)}{" "}
-            Worktest Model
-          </h1>
+          <h1 className="text-2xl font-bold mb-6 text-center">Analyzing Your {selectedDifficulty.charAt(0).toUpperCase() + selectedDifficulty.slice(1)} Worktest Model</h1>
 
           {/* Progress Section */}
           <div className="mb-8 bg-white p-6 rounded-lg shadow-sm">
@@ -672,10 +667,9 @@ export default function WorktestQA() {
               QA Analysis in Progress
             </h2>
             <p className="text-gray-600 text-center mb-4">
-              Our AI is comparing your model against the worktest reference
-              images. This may take a minute.
+              Our AI is comparing your model against the worktest reference images. This may take a minute.
             </p>
-
+            
             {currentJobId && (
               <div className="text-center text-sm text-gray-500 mb-4">
                 Job ID: {currentJobId}
@@ -759,8 +753,7 @@ export default function WorktestQA() {
               ))}
             </div>
             <p className="text-sm text-gray-600 mt-2">
-              Your model is being compared against these official reference
-              images.
+              Your model is being compared against these official reference images.
             </p>
           </div>
 
@@ -807,9 +800,7 @@ export default function WorktestQA() {
                     🎉 Technical Requirements Passed!
                   </h3>
                   <p className="text-green-700 mt-1">
-                    Your {selectedDifficulty} level model successfully meets all
-                    our technical standards. It's now ready for expert human
-                    evaluation.
+                    Your {selectedDifficulty} level model successfully meets all our technical standards. It's now ready for expert human evaluation.
                   </p>
                 </div>
               </div>
@@ -824,8 +815,7 @@ export default function WorktestQA() {
                   📜 Generate Your Verification Certificate
                 </h3>
                 <p className="text-green-700 mb-4">
-                  Get your official verification document to include with your
-                  submission to our recruitment team.
+                  Get your official verification document to include with your submission to our recruitment team.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <input
@@ -863,9 +853,8 @@ export default function WorktestQA() {
                   </h3>
                 </div>
                 <p className="text-green-700 mb-4">
-                  Your verification certificate for{" "}
-                  <strong>{candidateName}</strong> is ready. Please send this
-                  along with your .glb model to recruitment@charpstar.com.
+                  Your verification certificate for <strong>{candidateName}</strong> is ready. 
+                  Please send this along with your .glb model to recruitment@charpstar.com.
                 </p>
                 <button
                   onClick={downloadCertificate}
@@ -896,18 +885,9 @@ export default function WorktestQA() {
               📧 What Happens Next?
             </h3>
             <div className="text-sm text-blue-800 space-y-2">
-              <p>
-                <strong>1. Submit your work:</strong> Email your certificate and
-                .glb model to recruitment@charpstar.com
-              </p>
-              <p>
-                <strong>2. Human QA review:</strong> Our expert team will
-                conduct a detailed evaluation of your model
-              </p>
-              <p>
-                <strong>3. Response timeline:</strong> We'll get back to you
-                within 3 working days with feedback
-              </p>
+              <p><strong>1. Submit your work:</strong> Email your certificate and .glb model to recruitment@charpstar.com</p>
+              <p><strong>2. Human QA review:</strong> Our expert team will conduct a detailed evaluation of your model</p>
+              <p><strong>3. Response timeline:</strong> We'll get back to you within 3 working days with feedback</p>
             </div>
           </div>
         </div>
