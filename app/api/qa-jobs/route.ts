@@ -523,21 +523,7 @@ async function processQAJob(
     // In your processQAJob function, replace the systemMessage creation with this:
     const systemMessage = {
       role: "system",
-      content: `You are a 3D-model QA engine. Compare the provided renders against the provided reference images and output ONLY a single JSON object (no markdown, no code fences, no comments) exactly matching this schema:
-
-{
-  "differences": [
-    {
-      "renderIndex": <integer>,
-      "referenceIndex": <integer>,
-      "issues": [<string>],
-      "bbox": [<integer>, <integer>, <integer>, <integer>],
-      "severity": "low" | "medium" | "high"
-    }
-  ],
-  "summary": <string>,
-  "status": "Approved" | "Not Approved"
-}
+      content: `You are a 3D model QA engine. The metadata object modelStats may include a 'requirements' object with numeric properties maxTriangles, maxMaterials, maxFileSize, and a numeric property doubleSidedCount.
 
 ${
   modelStats && modelStats.requirements
@@ -552,35 +538,47 @@ ${
         modelStats.requirements.maxFileSize /
         (1024 * 1024)
       ).toFixed(0)}MB)
-• Double-sided materials: ${modelStats.doubleSidedCount}
+• Double-sided count: ${modelStats.doubleSidedCount}
 
 `
-    : ""
+    : ``
 }
-
-MANDATORY TECHNICAL OVERRIDE:
+TECHNICAL OVERRIDE:
 If modelStats.requirements is defined AND any of:
 - modelStats.triangles > modelStats.requirements.maxTriangles
 - modelStats.materialCount > modelStats.requirements.maxMaterials
 - modelStats.fileSize > modelStats.requirements.maxFileSize
 - modelStats.doubleSidedCount > 0
 
-Then output exactly:
+Then output exactly this JSON and stop:
 {
   "differences": [],
   "summary": "Technical requirements failed. Similarity scores: Silhouette 0%, Proportion 0%, Color/Material 0%, Overall 0%.",
   "status": "Not Approved"
 }
 
-Otherwise:
-1. Compute silhouette, proportion, colorMaterial scores as integers 0–100.
-2. Compute overall = round((silhouette + proportion + colorMaterial) / 3).
-3. Build "differences" array listing only the major issues.
-4. Set "summary" to a brief description ending with
-   "Similarity scores: Silhouette S%, Proportion P%, Color/Material C%, Overall O%."
-5. If overall ≥ 60 → status = "Approved"; otherwise → status = "Not Approved".
+Otherwise, continue:
 
-Ensure your output is valid JSON with no extra keys, no trailing commas, and can be parsed by JSON.parse().`,
+Output exactly one JSON object with these keys:
+
+"differences": [
+  {
+    "renderIndex": <integer>,
+    "referenceIndex": <integer>,
+    "issues": [<string>],
+    "bbox": [<integer>,<integer>,<integer>,<integer>],
+    "severity": "low"|"medium"|"high"
+  }
+],
+"summary": <string ending with "Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.">,
+"status": "Approved"|"Not Approved"
+
+SCORING & APPROVAL:
+1. Compute silhouette, proportion, colorMaterial as integers 0–100.
+2. overall = round((silhouette + proportion + colorMaterial) / 3).
+3. If overall ≥ 60 → status = "Approved"; else → status = "Not Approved".
+
+Do not output anything else—no markdown, no code fences, no extra keys, no comments.`,
     };
 
     const messages: Message[] = [
