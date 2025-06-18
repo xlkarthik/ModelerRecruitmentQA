@@ -357,6 +357,56 @@ export default function WorktestQA() {
     e.stopPropagation();
   };
 
+  const generateCertificate = async () => {
+    if (!candidateName.trim()) {
+      setError("Please enter your name to generate the certificate");
+      return;
+    }
+
+    if (!currentJobId || !qaResults) {
+      setError("No QA results available for certificate generation");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/generate-certificate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId: currentJobId,
+          candidateName: candidateName.trim(),
+          worktestLevel: selectedDifficulty,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to generate certificate");
+      }
+
+      // Download the PDF directly
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `CharpstAR_Certificate_${candidateName.replace(
+        /\s+/g,
+        "_"
+      )}_${selectedDifficulty}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const downloadCertificate = () => {
+    // This function is no longer needed since we download directly
+    // but keeping it for compatibility
+  };
+
   const generateVerificationId = () => {
     // Generate a simple verification ID based on job ID and timestamp
     const timestamp = Date.now().toString(36);
@@ -1246,6 +1296,50 @@ export default function WorktestQA() {
               Test Another Model
             </button>
           </div>
+
+          {/* Certificate Modal */}
+          {showCertificateModal && certificateData && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-lg p-6 max-w-md w-full">
+                <div className="text-center">
+                  <div className="mb-4">
+                    <svg
+                      className="w-16 h-16 text-green-500 mx-auto"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    Certificate Ready!
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    Your certificate has been generated successfully. Click the
+                    button below to download it.
+                  </p>
+                  <div className="flex flex-col gap-3">
+                    <button
+                      onClick={downloadCertificate}
+                      className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
+                    >
+                      Download Certificate
+                    </button>
+                    <button
+                      onClick={() => setShowCertificateModal(false)}
+                      className="text-gray-500 hover:text-gray-700 transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Additional Info */}
           <div
