@@ -524,74 +524,57 @@ async function processQAJob(
 
     const systemMessage = {
       role: "system",
-      content: `You are a 3D model validator. Keep analysis brief and focused.
+      content: `You are a 3D-model QA engine. Compare the provided renders against the provided reference images and output **only** a single JSON object with these keys:
 
-‼️ PRIMARY GOAL ‼️
-1. Check if it's the right type of object (sofa vs chair vs table)
-2. Check if technical requirements are met
-3. Give basic similarity assessment
+1. "differences": an array of
+   - renderIndex (int),
+   - referenceIndex (int),
+   - issues (array of brief strings),
+   - bbox (array [x,y,width,height]),
+   - severity ("low" | "medium" | "high").
+2. "summary": a concise English description of overall findings.
+   - Must end with "Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%."
+3. "status": either "Approved" or "Not Approved".
 
-‼️ OBJECT TYPE CHECK ‼️
-• Wrong object type = REJECT (all scores <25%)
-
-‼️ TECHNICAL REQUIREMENTS ‼️
 ${
   modelStats && modelStats.requirements
-    ? `
-Current model specs:
+    ? `Current model specs:
 • Triangles: ${
         modelStats.triangles?.toLocaleString() || "N/A"
       } (max: ${modelStats.requirements.maxTriangles?.toLocaleString()})
-• Materials: ${modelStats.materialCount || "N/A"} (max: ${
+• Materials: ${modelStats.materialCount} (max: ${
         modelStats.requirements.maxMaterials
-      })  
+      })
 • File size: ${(modelStats.fileSize / (1024 * 1024)).toFixed(1)}MB (max: ${(
         modelStats.requirements.maxFileSize /
         (1024 * 1024)
       ).toFixed(0)}MB)
-• Double-sided: ${modelStats.doubleSidedCount || 0}
-
-${
-  modelStats.triangles > modelStats.requirements.maxTriangles ||
-  modelStats.materialCount > modelStats.requirements.maxMaterials ||
-  modelStats.fileSize > modelStats.requirements.maxFileSize ||
-  (modelStats.doubleSidedCount || 0) > 0
-    ? "❌ TECHNICAL REQUIREMENTS FAILED - AUTOMATIC REJECTION"
-    : "✅ Technical requirements passed"
-}
+• Double-sided: ${modelStats.doubleSidedCount}
 `
     : ""
 }
 
-‼️ SIMPLE SIMILARITY SCORING ‼️
-• SILHOUETTE: Basic shape (70-100% = good, 50-69% = okay, <50% = poor)
-• PROPORTION: Part sizes (70-100% = good, 50-69% = okay, <50% = poor)  
-• COLOR/MATERIAL: Visual appearance (70-100% = good, 50-69% = okay, <50% = poor)
-• OVERALL: Average of above
+‼️ MANDATORY OVERRIDE RULE ‼️  
+• If any technical requirement fails → status **must** be "Not Approved" (ignore similarity scores).
 
-‼️ APPROVAL RULES ‼️
-• Overall ≥60% AND technical requirements passed = "Approved"
-• Otherwise = "Not Approved"
+‼️ SCORING & APPROVAL RULES ‼️  
+1. Check Technical Requirements first:  
+   • Triangles ≤ maxTriangles  
+   • Materials ≤ maxMaterials  
+   • File size ≤ maxFileSize  
+   • Double-sided count = 0  
+2. If any of the above fails → status = "Not Approved", stop here.  
+3. Otherwise compute:  
+   • Silhouette: 0–100% (shape match)  
+   • Proportion: 0–100% (part sizes)  
+   • Color/Material: 0–100% (appearance)  
+   • Overall: average of the three.  
+4. If overall ≥ 60% → status = "Approved"; else → status = "Not Approved".
 
-Keep it simple. Focus on major differences only.
-
-MANDATORY FORMAT: End summary with "Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%."
-
-Output only valid JSON:
-{
-  "differences": [
-    {
-      "renderIndex": 0,
-      "referenceIndex": 1,
-      "issues": ["Brief major difference only"],
-      "bbox": [x, y, width, height],
-      "severity": "medium"
-    }
-  ],
-  "summary": "Brief assessment. Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.",
-  "status": "Not Approved"
-}`,
+‼️ FORMAT ‼️  
+Output **only** valid JSON. No extra keys, no markdown, no comments.`,
     };
+
     const messages: Message[] = [
       {
         role: "system",
