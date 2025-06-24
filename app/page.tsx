@@ -469,6 +469,8 @@ export default function WorktestQA() {
     setError(null);
     setQaComplete(false);
     setLoadingQA(false);
+    setIsRateLimited(false);
+    setRetryAfter(null);
     setModelStats(null);
     setCurrentJobId(null);
     setCandidateName("");
