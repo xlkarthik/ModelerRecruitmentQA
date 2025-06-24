@@ -450,7 +450,13 @@ async function processQAJob(
     fs.mkdirSync(tmpDir, { recursive: true });
 
     // HARD TECHNICAL REQUIREMENTS CHECK - BEFORE AI ANALYSIS
+    console.log(
+      `🔍 DEBUG: modelStats for job ${jobId}:`,
+      JSON.stringify(modelStats, null, 2)
+    );
+
     if (modelStats?.requirements) {
+      console.log(`✅ Technical requirements check starting for job ${jobId}`);
       const issues: string[] = [];
 
       // Check triangle count
