@@ -454,6 +454,8 @@ async function processQAJob(
       `🔍 DEBUG: modelStats for job ${jobId}:`,
       JSON.stringify(modelStats, null, 2)
     );
+    console.log(`🔍 DEBUG: Has requirements?`, !!modelStats?.requirements);
+    console.log(`🔍 DEBUG: doubleSidedCount:`, modelStats?.doubleSidedCount);
 
     if (modelStats?.requirements) {
       console.log(`✅ Technical requirements check starting for job ${jobId}`);
