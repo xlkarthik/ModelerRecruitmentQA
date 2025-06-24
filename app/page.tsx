@@ -709,12 +709,28 @@ export default function WorktestQA() {
               </svg>
             </div>
             <h2 className="text-lg font-semibold text-center mb-4">
-              QA Analysis in Progress
+              {isRateLimited
+                ? "⏱️ Rate Limited - Waiting..."
+                : "QA Analysis in Progress"}
             </h2>
-            <p className="text-gray-600 text-center mb-4">
-              Our AI is comparing your model against the worktest reference
-              images. This may take a minute.
-            </p>
+            {isRateLimited ? (
+              <div className="text-center mb-4">
+                <p className="text-orange-600 mb-2">
+                  🚦 Too many requests - slowing down polling to prevent rate
+                  limits
+                </p>
+                {retryAfter && (
+                  <p className="text-sm text-gray-600">
+                    Retrying in {Math.ceil(retryAfter / 1000)} seconds...
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="text-gray-600 text-center mb-4">
+                Our AI is comparing your model against the worktest reference
+                images. This may take a minute.
+              </p>
+            )}
 
             {currentJobId && (
               <div className="text-center text-sm text-gray-500 mb-4">
