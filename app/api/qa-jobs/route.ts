@@ -500,9 +500,7 @@ async function processQAJob(
             bbox: [0, 0, 100, 100],
             severity: "high" as const,
           })),
-          summary: `${issues.join(
-            "; "
-          )}. Similarity scores: Silhouette 0%, Proportion 0%, Color/Material 0%, Overall 0%.`,
+          summary: `${issues.join("; ")}.`,
           status: "Not Approved",
           similarityScores: {
             silhouette: 0,
