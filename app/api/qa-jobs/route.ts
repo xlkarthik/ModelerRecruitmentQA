@@ -610,46 +610,46 @@ async function processQAJob(
 
     // In your processQAJob function, replace the systemMessage creation with this:
 
-    // In your processQAJob function, replace the systemMessage creation with this:
+    // AI Visual Analysis System Message (Technical requirements already checked)
     const systemMessage = {
       role: "system",
-      content: `You are a 3D model QA engine. The metadata object modelStats may include a 'requirements' object with numeric properties maxTriangles, maxMaterials, maxFileSize, and a numeric property doubleSidedCount.
+      content: `You are a 3D model visual QA specialist. The model has already passed technical requirements validation.
 
-${
-  modelStats && modelStats.requirements
-    ? `Current model specs:
-• Triangles: ${
-        modelStats.triangles?.toLocaleString() || "N/A"
-      } (max: ${modelStats.requirements.maxTriangles?.toLocaleString()})
-• Materials: ${modelStats.materialCount} (max: ${
-        modelStats.requirements.maxMaterials
-      })
-• File size: ${(modelStats.fileSize / (1024 * 1024)).toFixed(1)}MB (max: ${(
-        modelStats.requirements.maxFileSize /
-        (1024 * 1024)
-      ).toFixed(0)}MB)
-• Double-sided count: ${modelStats.doubleSidedCount}
+Compare the 3D model renders against reference images for visual accuracy.
 
-`
-    : ``
-}
-TECHNICAL OVERRIDE:
-If modelStats.requirements is defined AND any of:
-- modelStats.triangles > modelStats.requirements.maxTriangles
-- modelStats.materialCount > modelStats.requirements.maxMaterials
-- modelStats.fileSize > modelStats.requirements.maxFileSize
-- modelStats.doubleSidedCount > 0
+‼️ CRITICAL - READ CAREFULLY ‼️
+PERSPECTIVE & VIEW MATCHING:
+• ONLY compare views showing the SAME PERSPECTIVE and ANGLE of the product
+• If the render shows a different side or angle than the reference, DO NOT compare them at all
+• Different sides of the product should NEVER be compared (e.g., front view vs. side view)
 
+‼️ NO DUPLICATE COMMENTS ‼️
+• If you find the same issue visible in multiple views, mention it ONLY ONCE
+• Choose the clearest/best view to report the issue, not every view where it's visible
 
-Don't compare the images if technical requirments are not met. Consider it not approved
-Then output exactly this JSON and stop:
-{
-  "differences": [],
-  "summary": "Technical requirements failed. Similarity scores: Silhouette 0%, Proportion 0%, Color/Material 0%, Overall 0%.",
-  "status": "Not Approved"
-}
+Guidelines:
+1. 3D Model come from <model-viewer>—perfect fidelity is not expected.
+2. References are human-crafted—focus on real discrepancies.
+3. Analyze geometry, proportions, textures, and material colors for each pairing.
+4. Be extremely specific with differences.
+5. Each issue must state: what's in the 3D Model, what's in the reference, the exact difference.
 
-Otherwise, continue:
+SCORING - BE PRECISE:
+• SILHOUETTE: Compare overall shape, outline, and form. Ignore color/texture. Perfect match = 100%
+• PROPORTION: Compare relative sizes of parts. Be strict - even 5% size differences should reduce score
+• COLOR/MATERIAL: Compare exact colors, textures, materials. Small color shifts should impact score significantly
+• OVERALL: Weighted average considering all factors. Be conservative
+
+SCORING SCALE: 
+• 90-100% = excellent match with minimal differences
+• 75-89% = good match but clear differences visible
+• 60-74% = acceptable match with moderate differences  
+• 40-59% = poor match with significant differences
+• 0-39% = unacceptable match with major differences
+
+APPROVAL CRITERIA:
+- If overall score ≥ 70% → status = "Approved"
+- If overall score < 70% → status = "Not Approved"
 
 Output exactly one JSON object with these keys:
 
@@ -665,11 +665,6 @@ Output exactly one JSON object with these keys:
 "summary": <string ending with "Similarity scores: Silhouette X%, Proportion X%, Color/Material X%, Overall X%.">,
 "status": "Approved"|"Not Approved"
 
-SCORING & APPROVAL:
-1. Compute silhouette, proportion, colorMaterial as integers 0–100.
-2. overall = round((silhouette + proportion + colorMaterial) / 3).
-3. If overall ≥ 60 → status = "Approved"; else → status = "Not Approved".
-!!!Highly IMPORTANT : Even if the overall score is greater than 60, if technical requirments doesnt meet the requirment, model shouldn't be approved!!!
 Do not output anything else—no markdown, no code fences, no extra keys, no comments.`,
     };
 
