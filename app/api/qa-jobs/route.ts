@@ -449,6 +449,96 @@ async function processQAJob(
       fs.rmSync(tmpDir, { recursive: true, force: true });
     fs.mkdirSync(tmpDir, { recursive: true });
 
+    // HARD TECHNICAL REQUIREMENTS CHECK - BEFORE AI ANALYSIS
+    if (modelStats?.requirements) {
+      const issues: string[] = [];
+
+      // Check triangle count
+      if (
+        modelStats.triangles &&
+        modelStats.triangles > modelStats.requirements.maxTriangles
+      ) {
+        issues.push(
+          `Triangle count: ${modelStats.triangles.toLocaleString()} exceeds maximum ${modelStats.requirements.maxTriangles.toLocaleString()}`
+        );
+      }
+
+      // Check material count
+      if (modelStats.materialCount > modelStats.requirements.maxMaterials) {
+        issues.push(
+          `Material count: ${modelStats.materialCount} exceeds maximum ${modelStats.requirements.maxMaterials}`
+        );
+      }
+
+      // Check file size
+      if (modelStats.fileSize > modelStats.requirements.maxFileSize) {
+        const actualMB = (modelStats.fileSize / (1024 * 1024)).toFixed(1);
+        const maxMB = (
+          modelStats.requirements.maxFileSize /
+          (1024 * 1024)
+        ).toFixed(0);
+        issues.push(`File size: ${actualMB}MB exceeds maximum ${maxMB}MB`);
+      }
+
+      // Check double-sided materials
+      if (modelStats.doubleSidedCount > 0) {
+        issues.push(
+          `Double-sided materials: ${modelStats.doubleSidedCount} found (should be 0)`
+        );
+      }
+
+      // If technical requirements failed, skip AI analysis entirely
+      if (issues.length > 0) {
+        console.log(
+          `⚠️ Technical requirements failed for job ${jobId}:`,
+          issues
+        );
+
+        const technicalFailureResult: QAResults = {
+          differences: issues.map((issue, index) => ({
+            renderIndex: 0,
+            referenceIndex: 0,
+            issues: [issue],
+            bbox: [0, 0, 100, 100],
+            severity: "high" as const,
+          })),
+          summary: `Technical requirements validation failed: ${issues.join(
+            "; "
+          )}. Model must be optimized before visual analysis can proceed. Similarity scores: Silhouette 0%, Proportion 0%, Color/Material 0%, Overall 0%.`,
+          status: "Not Approved",
+          similarityScores: {
+            silhouette: 0,
+            proportion: 0,
+            colorMaterial: 0,
+            overall: 0,
+          },
+        };
+
+        // Save technical failure result to database
+        const { error: updateError } = await supabase
+          .from("qa_jobs")
+          .update({
+            status: "complete",
+            qa_results: JSON.stringify(technicalFailureResult),
+            end_time: new Date(),
+          })
+          .eq("id", jobId);
+
+        if (updateError) {
+          console.error(
+            `Failed to save technical failure result for job ${jobId}:`,
+            updateError
+          );
+          throw new Error(`Failed to save results: ${updateError.message}`);
+        }
+
+        console.log(`✅ Technical failure result saved for job ${jobId}`);
+        return; // Exit early - no need for AI analysis
+      }
+
+      console.log(`✅ Technical requirements passed for job ${jobId}`);
+    }
+
     // Prepare GPT messages with improved system prompt
     //     const systemMessage = {
     //       role: "system",
