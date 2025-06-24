@@ -240,15 +240,23 @@ export default function WorktestQA() {
           // Handle rate limiting gracefully
           if (response.status === 429) {
             console.warn("🚦 Rate limited - increasing backoff delay");
+            setIsRateLimited(true);
             backoffDelay = Math.min(backoffDelay * 2, maxBackoffDelay);
 
-            const retryAfter = response.headers.get("Retry-After");
-            const waitTime = retryAfter
-              ? parseInt(retryAfter) * 1000
-              : backoffDelay;
+            const retryAfterHeader = response.headers.get("Retry-After");
+            const retryAfterMs = retryAfterHeader
+              ? parseInt(retryAfterHeader) * 1000
+              : null;
+            setRetryAfter(retryAfterMs);
+
+            const waitTime = retryAfterMs || backoffDelay;
 
             if (isActive) {
-              timeoutId = setTimeout(checkJobStatus, waitTime);
+              timeoutId = setTimeout(() => {
+                setIsRateLimited(false);
+                setRetryAfter(null);
+                checkJobStatus();
+              }, waitTime);
             }
             return;
           }
