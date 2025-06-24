@@ -216,11 +216,15 @@ export default function WorktestQA() {
       if (!isActive) return;
 
       pollCount++;
-      console.log(`Intelligent poll #${pollCount} for job ${currentJobId} (delay: ${backoffDelay}ms)`);
+      console.log(
+        `Intelligent poll #${pollCount} for job ${currentJobId} (delay: ${backoffDelay}ms)`
+      );
 
       // Timeout after reasonable time with longer intervals
       if (pollCount > maxPolls) {
-        console.error("⏰ Job polling timeout - stopping after extended period");
+        console.error(
+          "⏰ Job polling timeout - stopping after extended period"
+        );
         setError("Job is taking too long to complete. Please try again.");
         setLoadingQA(false);
         isActive = false;
@@ -235,10 +239,12 @@ export default function WorktestQA() {
           if (response.status === 429) {
             console.warn("🚦 Rate limited - increasing backoff delay");
             backoffDelay = Math.min(backoffDelay * 2, maxBackoffDelay);
-            
-            const retryAfter = response.headers.get('Retry-After');
-            const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : backoffDelay;
-            
+
+            const retryAfter = response.headers.get("Retry-After");
+            const waitTime = retryAfter
+              ? parseInt(retryAfter) * 1000
+              : backoffDelay;
+
             if (isActive) {
               timeoutId = setTimeout(checkJobStatus, waitTime);
             }
@@ -279,12 +285,12 @@ export default function WorktestQA() {
           console.log(
             `⏳ Job still ${data.status}, continuing with exponential backoff... (${pollCount}/${maxPolls})`
           );
-          
+
           // Successful poll - can reduce backoff slightly but keep it reasonable
           if (backoffDelay > 5000) {
             backoffDelay = Math.max(backoffDelay * 0.9, 5000);
           }
-          
+
           // Schedule next poll with current backoff delay
           if (isActive) {
             timeoutId = setTimeout(checkJobStatus, backoffDelay);
@@ -292,10 +298,10 @@ export default function WorktestQA() {
         }
       } catch (err: any) {
         console.error("Error checking job status:", err);
-        
+
         // On network errors, increase backoff
         backoffDelay = Math.min(backoffDelay * 1.5, maxBackoffDelay);
-        
+
         if (pollCount < maxPolls && isActive) {
           console.log(`Retrying in ${backoffDelay}ms due to error...`);
           timeoutId = setTimeout(checkJobStatus, backoffDelay);
