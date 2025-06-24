@@ -120,6 +120,8 @@ export default function WorktestQA() {
   const [error, setError] = useState<string | null>(null);
   const [qaComplete, setQaComplete] = useState(false);
   const [loadingQA, setLoadingQA] = useState(false);
+  const [isRateLimited, setIsRateLimited] = useState(false);
+  const [retryAfter, setRetryAfter] = useState<number | null>(null);
   const [fact, setFact] = useState<string>("");
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [viewerReady, setViewerReady] = useState(false);
