@@ -666,8 +666,12 @@ export default function WorktestQA() {
   // Helper function to detect technical requirement failures
   const isTechnicalFailure = (qaResults: any) => {
     if (!qaResults?.summary) return false;
-    return qaResults.summary.includes(
-      "Technical requirements validation failed"
+    // Check if it's a technical failure by looking for technical requirement terms
+    return (
+      qaResults.summary.includes("Triangle count:") ||
+      qaResults.summary.includes("Material count:") ||
+      qaResults.summary.includes("File size:") ||
+      qaResults.summary.includes("Double sided material found")
     );
   };
 
