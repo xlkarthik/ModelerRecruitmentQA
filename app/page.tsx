@@ -1050,22 +1050,45 @@ export default function WorktestQA() {
 
             {/* Issues Section for Non-Approved Models */}
             <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 text-red-600">
-                Issues Found - Model Needs Improvement
-              </h3>
-              <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
-                <p className="text-red-700">
-                  Your model did not meet the approval criteria. Please review
-                  the detailed feedback below and make the necessary adjustments
-                  before resubmitting.
-                </p>
-              </div>
+              {isTechnicalFailure(qaResults) ? (
+                <>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 text-red-600">
+                    ⚠️ Technical Requirements Failed
+                  </h3>
+                  <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+                    <p className="text-red-700 font-medium mb-2">
+                      Your model failed mandatory technical requirements and was
+                      automatically rejected.
+                    </p>
+                    <p className="text-red-600 text-sm">
+                      Models must meet all technical specifications before
+                      visual analysis can begin. Please optimize your model and
+                      try again.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 text-red-600">
+                    Issues Found - Model Needs Improvement
+                  </h3>
+                  <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+                    <p className="text-red-700">
+                      Your model did not meet the approval criteria. Please
+                      review the detailed feedback below and make the necessary
+                      adjustments before resubmitting.
+                    </p>
+                  </div>
+                </>
+              )}
 
               {/* QA Summary */}
               {qaResults?.summary && (
                 <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
                   <h4 className="font-medium text-blue-800 mb-2">
-                    QA Analysis Summary
+                    {isTechnicalFailure(qaResults)
+                      ? "Technical Analysis"
+                      : "QA Analysis Summary"}
                   </h4>
                   <p className="text-blue-700">{qaResults.summary}</p>
                 </div>
@@ -1074,7 +1097,9 @@ export default function WorktestQA() {
               {qaResults?.differences && qaResults.differences.length > 0 && (
                 <div className="space-y-4">
                   <h4 className="font-medium text-gray-800">
-                    Issues to Address:
+                    {isTechnicalFailure(qaResults)
+                      ? "Technical Requirements Not Met:"
+                      : "Issues to Address:"}
                   </h4>
                   <div className="space-y-2">
                     {qaResults.differences.map((diff, index) => (
@@ -1082,9 +1107,22 @@ export default function WorktestQA() {
                         {diff.issues.map((issue, issueIndex) => (
                           <div
                             key={issueIndex}
-                            className="p-3 bg-gray-50 border-l-4 border-gray-400 rounded"
+                            className={`p-3 border-l-4 rounded ${
+                              isTechnicalFailure(qaResults)
+                                ? "bg-red-50 border-red-500"
+                                : "bg-gray-50 border-gray-400"
+                            }`}
                           >
-                            <p className="text-sm text-gray-700">• {issue}</p>
+                            <p
+                              className={`text-sm ${
+                                isTechnicalFailure(qaResults)
+                                  ? "text-red-700 font-medium"
+                                  : "text-gray-700"
+                              }`}
+                            >
+                              {isTechnicalFailure(qaResults) ? "❌" : "•"}{" "}
+                              {issue}
+                            </p>
                           </div>
                         ))}
                       </div>
