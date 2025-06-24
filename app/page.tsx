@@ -1313,16 +1313,40 @@ export default function WorktestQA() {
           {/* Action Buttons */}
           <div className="flex flex-col gap-4 mb-6">
             {/* Improvement Message for Non-Approved Models */}
-            <div className="bg-red-50 p-6 rounded-lg border border-red-200">
-              <h3 className="text-lg font-semibold text-red-800 mb-2">
-                Model Requires Improvements
-              </h3>
-              <p className="text-red-700">
-                Please review the issues listed above and make the necessary
-                adjustments to your 3D model. Once you've addressed these
-                concerns, you can upload your improved model for re-evaluation.
-              </p>
-            </div>
+            {isTechnicalFailure(qaResults) ? (
+              <div className="bg-red-50 p-6 rounded-lg border border-red-200">
+                <h3 className="text-lg font-semibold text-red-800 mb-2">
+                  🔧 Technical Optimization Required
+                </h3>
+                <p className="text-red-700 mb-3">
+                  Your model failed mandatory technical requirements and must be
+                  optimized before it can proceed to visual analysis.
+                </p>
+                <div className="text-red-600 text-sm space-y-1">
+                  <p>
+                    <strong>Common fixes:</strong>
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 ml-2">
+                    <li>Reduce polygon count using mesh decimation</li>
+                    <li>Combine or reduce materials</li>
+                    <li>Compress textures or reduce file size</li>
+                    <li>Fix double-sided materials (set to single-sided)</li>
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-red-50 p-6 rounded-lg border border-red-200">
+                <h3 className="text-lg font-semibold text-red-800 mb-2">
+                  Model Requires Improvements
+                </h3>
+                <p className="text-red-700">
+                  Please review the issues listed above and make the necessary
+                  adjustments to your 3D model. Once you've addressed these
+                  concerns, you can upload your improved model for
+                  re-evaluation.
+                </p>
+              </div>
+            )}
 
             <button
               onClick={resetAll}
