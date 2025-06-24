@@ -199,27 +199,28 @@ export default function WorktestQA() {
     document.head.appendChild(script);
   }, []);
 
-  // Poll for job status - WITH TIMEOUT PROTECTION
+  // Poll for job status - WITH EXPONENTIAL BACKOFF AND RATE LIMIT PROTECTION
   useEffect(() => {
     if (!currentJobId || qaComplete) return;
 
-    console.log("Starting polling for job:", currentJobId);
+    console.log("Starting intelligent polling for job:", currentJobId);
 
-    let intervalId: NodeJS.Timeout;
     let timeoutId: NodeJS.Timeout;
     let isActive = true;
     let pollCount = 0;
-    const maxPolls = 150; // 5 minutes at 2-second intervals
+    let backoffDelay = 5000; // Start with 5 seconds
+    const maxBackoffDelay = 30000; // Max 30 seconds between polls
+    const maxPolls = 60; // Reduce max polls since we're using longer intervals
 
     const checkJobStatus = async () => {
       if (!isActive) return;
 
       pollCount++;
-      console.log(`Poll #${pollCount} for job ${currentJobId}`);
+      console.log(`Intelligent poll #${pollCount} for job ${currentJobId} (delay: ${backoffDelay}ms)`);
 
-      // Timeout after 5 minutes
+      // Timeout after reasonable time with longer intervals
       if (pollCount > maxPolls) {
-        console.error("⏰ Job polling timeout - stopping after 5 minutes");
+        console.error("⏰ Job polling timeout - stopping after extended period");
         setError("Job is taking too long to complete. Please try again.");
         setLoadingQA(false);
         isActive = false;
@@ -230,6 +231,20 @@ export default function WorktestQA() {
         const response = await fetch(`/api/qa-jobs?jobId=${currentJobId}`);
 
         if (!response.ok) {
+          // Handle rate limiting gracefully
+          if (response.status === 429) {
+            console.warn("🚦 Rate limited - increasing backoff delay");
+            backoffDelay = Math.min(backoffDelay * 2, maxBackoffDelay);
+            
+            const retryAfter = response.headers.get('Retry-After');
+            const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : backoffDelay;
+            
+            if (isActive) {
+              timeoutId = setTimeout(checkJobStatus, waitTime);
+            }
+            return;
+          }
+
           console.error(`Job status check failed: ${response.status}`);
           setError(`Failed to check job status: ${response.statusText}`);
           setLoadingQA(false);
@@ -262,36 +277,43 @@ export default function WorktestQA() {
           isActive = false;
         } else {
           console.log(
-            `⏳ Job still ${data.status}, continuing... (${pollCount}/${maxPolls})`
+            `⏳ Job still ${data.status}, continuing with exponential backoff... (${pollCount}/${maxPolls})`
           );
+          
+          // Successful poll - can reduce backoff slightly but keep it reasonable
+          if (backoffDelay > 5000) {
+            backoffDelay = Math.max(backoffDelay * 0.9, 5000);
+          }
+          
+          // Schedule next poll with current backoff delay
+          if (isActive) {
+            timeoutId = setTimeout(checkJobStatus, backoffDelay);
+          }
         }
       } catch (err: any) {
         console.error("Error checking job status:", err);
-        setError(`Failed to check job status: ${err.message}`);
-        setLoadingQA(false);
-        isActive = false;
+        
+        // On network errors, increase backoff
+        backoffDelay = Math.min(backoffDelay * 1.5, maxBackoffDelay);
+        
+        if (pollCount < maxPolls && isActive) {
+          console.log(`Retrying in ${backoffDelay}ms due to error...`);
+          timeoutId = setTimeout(checkJobStatus, backoffDelay);
+        } else {
+          setError(`Failed to check job status: ${err.message}`);
+          setLoadingQA(false);
+          isActive = false;
+        }
       }
     };
 
-    // Start polling
-    intervalId = setInterval(checkJobStatus, 2000);
-    checkJobStatus(); // Call immediately
-
-    // Backup timeout (should never hit this if polling works)
-    timeoutId = setTimeout(() => {
-      console.error("🚨 Hard timeout - forcing job completion check");
-      isActive = false;
-      setError("Job processing timeout. Please refresh and try again.");
-      setLoadingQA(false);
-    }, 6 * 60 * 1000); // 6 minutes
+    // Start first poll immediately
+    checkJobStatus();
 
     // Cleanup function
     return () => {
-      console.log("🧹 Cleaning up polling for job:", currentJobId);
+      console.log("🧹 Cleaning up intelligent polling for job:", currentJobId);
       isActive = false;
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
