@@ -545,6 +545,56 @@ async function processQAJob(
       console.log(
         `⚠️ No technical requirements check - modelStats.requirements missing for job ${jobId}`
       );
+
+      // FAILSAFE: Even without requirements, reject double-sided materials
+      if (modelStats?.doubleSidedCount && modelStats.doubleSidedCount > 0) {
+        console.log(
+          `🚨 FAILSAFE: Rejecting model with ${modelStats.doubleSidedCount} double-sided materials`
+        );
+
+        const technicalFailureResult: QAResults = {
+          differences: [
+            {
+              renderIndex: 0,
+              referenceIndex: 0,
+              issues: ["Double sided material found"],
+              bbox: [0, 0, 100, 100],
+              severity: "high" as const,
+            },
+          ],
+          summary: "Double sided material found.",
+          status: "Not Approved",
+          similarityScores: {
+            silhouette: 0,
+            proportion: 0,
+            colorMaterial: 0,
+            overall: 0,
+          },
+        };
+
+        // Save technical failure result to database
+        const { error: updateError } = await supabase
+          .from("qa_jobs")
+          .update({
+            status: "complete",
+            qa_results: JSON.stringify(technicalFailureResult),
+            end_time: new Date(),
+          })
+          .eq("id", jobId);
+
+        if (updateError) {
+          console.error(
+            `Failed to save failsafe technical failure result for job ${jobId}:`,
+            updateError
+          );
+          throw new Error(`Failed to save results: ${updateError.message}`);
+        }
+
+        console.log(
+          `✅ FAILSAFE: Technical failure result saved for job ${jobId}`
+        );
+        return; // Exit early - no need for AI analysis
+      }
     }
 
     // Prepare GPT messages with improved system prompt
