@@ -482,9 +482,7 @@ async function processQAJob(
 
       // Check double-sided materials
       if (modelStats.doubleSidedCount > 0) {
-        issues.push(
-          `Double-sided materials: ${modelStats.doubleSidedCount} found (should be 0)`
-        );
+        issues.push("Double sided material found");
       }
 
       // If technical requirements failed, skip AI analysis entirely
