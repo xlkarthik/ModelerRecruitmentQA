@@ -169,10 +169,10 @@ class QAJobQueue {
   }
 }
 
-// Rate limiting per IP
+// Rate limiting per IP - More reasonable limits for QA tool
 const rateLimiter = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_WINDOW = 15 * 60 * 1000;
-const RATE_LIMIT_MAX_REQUESTS = 5;
+const RATE_LIMIT_WINDOW = 5 * 60 * 1000; // 5 minutes window
+const RATE_LIMIT_MAX_REQUESTS = 20; // 20 requests per 5 minutes (allows polling)
 
 function checkRateLimit(ip: string): {
   allowed: boolean;
