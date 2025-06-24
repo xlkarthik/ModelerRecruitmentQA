@@ -539,6 +539,10 @@ async function processQAJob(
       }
 
       console.log(`✅ Technical requirements passed for job ${jobId}`);
+    } else {
+      console.log(
+        `⚠️ No technical requirements check - modelStats.requirements missing for job ${jobId}`
+      );
     }
 
     // Prepare GPT messages with improved system prompt
