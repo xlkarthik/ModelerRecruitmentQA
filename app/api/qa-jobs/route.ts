@@ -502,7 +502,7 @@ async function processQAJob(
           })),
           summary: `Technical requirements validation failed: ${issues.join(
             "; "
-          )}. Model must be optimized before visual analysis can proceed. Similarity scores: Silhouette 0%, Proportion 0%, Color/Material 0%, Overall 0%.`,
+          )}. Similarity scores: Silhouette 0%, Proportion 0%, Color/Material 0%, Overall 0%.`,
           status: "Not Approved",
           similarityScores: {
             silhouette: 0,
